@@ -20,6 +20,7 @@ const guestLinks: NavigationLink[] = [
 const userLinks: NavigationLink[] = [
   ...guestLinks,
   { href: "/items/new", label: "Publicar" },
+  { href: "/items/manage", label: "Mis publicaciones" },
   { href: "/requests", label: "Solicitudes" },
   { href: "/profile", label: "Perfil" },
 ];
