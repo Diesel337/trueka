@@ -61,18 +61,37 @@ export function ItemCard({
     matchSignal,
     owner: resolvedOwner,
   });
+  const isCompactOwnCard = compact && isOwnItem;
+  const articleClassName = compact
+    ? "overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm transition hover:border-stone-300 hover:shadow"
+    : "overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md";
+  const imageClassName = compact ? "relative aspect-[16/9] bg-stone-100" : "relative aspect-[4/3] bg-stone-100";
+  const imageSizes = compact
+    ? "(min-width: 1536px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+    : "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw";
+  const bodyClassName = compact ? "space-y-2.5 p-3" : "space-y-4 p-4";
+  const titleClassName = compact
+    ? "line-clamp-1 text-base font-semibold text-stone-950"
+    : "line-clamp-2 text-lg font-semibold text-stone-950";
+  const descriptionClassName = compact
+    ? "mt-1 line-clamp-1 text-xs leading-5 text-stone-600"
+    : "mt-2 line-clamp-2 text-sm leading-6 text-stone-600";
+  const ownerControlButtonClassName = compact
+    ? "inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold transition"
+    : "inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition";
+  const ownerControlIconSize = compact ? 14 : 16;
 
   return (
-    <article className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <article className={articleClassName}>
       <div className="relative">
         <Link href={`/items/${item.id}`} className="block">
-          <div className="relative aspect-[4/3] bg-stone-100">
+          <div className={imageClassName}>
             {primaryPhotoUrl ? (
               <Image
                 src={primaryPhotoUrl}
                 alt={item.title}
                 fill
-                sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                sizes={imageSizes}
                 className="object-cover"
                 unoptimized
               />
@@ -97,9 +116,13 @@ export function ItemCard({
           nextPath={`/items/${item.id}`}
         />
       </div>
-      <div className="space-y-4 p-4">
+      <div className={bodyClassName}>
         <div>
-          <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-stone-600">
+          <div
+            className={`flex flex-wrap items-center text-stone-600 ${
+              compact ? "mb-1 gap-1.5 text-xs" : "mb-2 gap-2 text-sm"
+            }`}
+          >
             <span className="inline-flex min-w-0 items-center gap-2">
               <MapPin aria-hidden="true" size={15} className="shrink-0" />
               <span>
@@ -109,14 +132,18 @@ export function ItemCard({
             {personalSignal ? <PersonalSignalBadge signal={personalSignal} /> : null}
           </div>
           <Link href={`/items/${item.id}`}>
-            <h2 className="line-clamp-2 text-lg font-semibold text-stone-950">{item.title}</h2>
+            <h2 className={titleClassName}>{item.title}</h2>
           </Link>
-          <Link
-            href={`/users/${resolvedOwner.id}`}
-            className="mt-1 inline-block text-sm font-medium text-emerald-800 hover:text-emerald-950"
-          >
-            {resolvedOwner.displayName}
-          </Link>
+          {!isCompactOwnCard ? (
+            <Link
+              href={`/users/${resolvedOwner.id}`}
+              className={`mt-1 inline-block font-medium text-emerald-800 hover:text-emerald-950 ${
+                compact ? "text-xs" : "text-sm"
+              }`}
+            >
+              {resolvedOwner.displayName}
+            </Link>
+          ) : null}
           {requestMarker ? (
             <Link
               href={`/requests/${requestMarker.requestId}`}
@@ -133,7 +160,7 @@ export function ItemCard({
               </span>
             </Link>
           ) : null}
-          <p className="mt-2 line-clamp-2 text-sm leading-6 text-stone-600">{item.description}</p>
+          <p className={descriptionClassName}>{item.description}</p>
         </div>
 
         {!compact ? (
@@ -151,16 +178,22 @@ export function ItemCard({
           </div>
         ) : null}
 
-        <TrustBadge profile={resolvedOwner} />
+        {!isCompactOwnCard ? <TrustBadge profile={resolvedOwner} /> : null}
 
         {isOwnItem ? (
-          <div className="grid gap-2">
-            <div className="inline-flex items-center justify-center gap-2 rounded-md bg-stone-50 px-4 py-2 text-sm font-semibold text-stone-700">
-              <Eye aria-hidden="true" size={16} />
+          <div className={compact ? "grid gap-1.5" : "grid gap-2"}>
+            <div
+              className={`inline-flex items-center justify-center gap-2 rounded-md bg-stone-50 font-semibold text-stone-700 ${
+                compact ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm"
+              }`}
+            >
+              <Eye aria-hidden="true" size={ownerControlIconSize} />
               {(item.viewCount ?? 0).toLocaleString("es-MX")} vistas únicas
             </div>
             <span
-              className={`inline-flex min-h-10 items-center justify-center rounded-md px-3 py-2 text-sm font-semibold ${
+              className={`inline-flex items-center justify-center rounded-md font-semibold ${
+                compact ? "min-h-8 px-2 py-1 text-xs" : "min-h-10 px-3 py-2 text-sm"
+              } ${
                 item.status === "active"
                   ? "bg-emerald-50 text-emerald-800"
                   : "bg-stone-100 text-stone-600"
@@ -174,23 +207,24 @@ export function ItemCard({
                 status={item.status}
                 moderationStatus={item.moderationStatus}
                 hasPhotos={item.photoUrls.length > 0}
+                compact={compact}
               />
             ) : null}
             {showOwnerControls ? (
               <Link
                 href={`/items/${item.id}/edit`}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-800"
+                className={`${ownerControlButtonClassName} bg-emerald-700 text-white hover:bg-emerald-800`}
               >
-                <Pencil aria-hidden="true" size={16} />
+                <Pencil aria-hidden="true" size={ownerControlIconSize} />
                 Editar
               </Link>
             ) : null}
             <Link
               href={`/items/${item.id}`}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-stone-300 px-4 py-2.5 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
+              className={`${ownerControlButtonClassName} border border-stone-300 text-stone-700 hover:bg-stone-50`}
             >
-              Tu publicación
-              <ArrowRight aria-hidden="true" size={16} />
+              {compact ? "Ver" : "Tu publicación"}
+              <ArrowRight aria-hidden="true" size={ownerControlIconSize} />
             </Link>
           </div>
         ) : requestMarker ? (

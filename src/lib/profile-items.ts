@@ -15,6 +15,12 @@ export type ProfileItemSection = {
 
 const profileItemSectionMeta: Omit<ProfileItemSection, "items">[] = [
   {
+    status: "reserved",
+    title: "En negociación",
+    description: "Artículos apartados mientras avanza una solicitud aceptada.",
+    emptyMessage: "No tienes artículos en negociación.",
+  },
+  {
     status: "active",
     title: "Activas",
     description: "Visibles en Explorar y listas para recibir propuestas.",
@@ -31,12 +37,6 @@ const profileItemSectionMeta: Omit<ProfileItemSection, "items">[] = [
     title: "Pausadas",
     description: "Ocultas temporalmente mientras decides si volver a activarlas.",
     emptyMessage: "No tienes publicaciones pausadas.",
-  },
-  {
-    status: "reserved",
-    title: "En negociación",
-    description: "Artículos apartados mientras avanza una solicitud aceptada.",
-    emptyMessage: "No tienes artículos en negociación.",
   },
   {
     status: "traded",

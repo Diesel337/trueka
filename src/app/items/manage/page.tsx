@@ -63,8 +63,8 @@ export default async function ManageItemsPage() {
           </Link>
         </div>
 
-        <div className="mt-6 rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
-          <div className="space-y-8">
+        <div className="mt-6 rounded-lg border border-stone-200 bg-white p-4 shadow-sm sm:p-5">
+          <div className="space-y-6">
             {itemSections.map((section) => (
               <ManageItemStatusSection
                 key={section.status}
@@ -98,7 +98,7 @@ function ManageItemStatusSection({
         </span>
       </div>
       {section.items.length > 0 ? (
-        <div className="mt-4 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {section.items.map((item) => (
             <ItemCard
               key={item.id}

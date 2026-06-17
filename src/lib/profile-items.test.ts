@@ -40,17 +40,17 @@ describe("profile item sections", () => {
     ]);
 
     expect(sections.map((section) => section.status)).toEqual([
+      "reserved",
       "active",
       "draft",
       "paused",
-      "reserved",
       "traded",
     ]);
     expect(sections.map((section) => section.items.map((item) => item.id))).toEqual([
+      ["reserved-1"],
       ["active-1"],
       ["draft-1"],
       ["paused-1"],
-      ["reserved-1"],
       ["traded-1"],
     ]);
   });
