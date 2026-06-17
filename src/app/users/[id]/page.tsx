@@ -148,12 +148,13 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
           </Link>
         </div>
 
-        <div className="mt-6 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {activeItems.map((item) => (
             <ItemCard
               key={item.id}
               item={item}
               owner={profile}
+              compact
               currentProfile={currentProfile}
               isSaved={savedItemIdsSet.has(item.id)}
             />

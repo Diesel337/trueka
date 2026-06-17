@@ -1,9 +1,10 @@
-import { Bell, Inbox, Send } from "lucide-react";
+import { Bell, Inbox, MessageCircle, Repeat2, Send } from "lucide-react";
 import Link from "next/link";
 
 import { LiveRefresh } from "@/components/live-refresh";
 import { TradeRequestCard } from "@/components/trade-request-card";
 import { getCurrentProfile, getTradeRequestsForCurrentUser } from "@/lib/data";
+import { getRequestQueueSummary, sortTradeRequestsForQueue } from "@/lib/request-queue";
 
 export default async function RequestsPage() {
   const [currentUser, tradeRequests] = await Promise.all([
@@ -30,10 +31,17 @@ export default async function RequestsPage() {
     );
   }
 
-  const received = tradeRequests.filter((request) => request.receiver.id === currentUser.id);
-  const sent = tradeRequests.filter((request) => request.requester.id === currentUser.id);
-  const pendingReceivedCount = received.filter((request) => request.status === "pending").length;
-  const unreadMessageCount = tradeRequests.reduce((sum, request) => sum + (request.unreadMessageCount ?? 0), 0);
+  const received = sortTradeRequestsForQueue(
+    tradeRequests.filter((request) => request.receiver.id === currentUser.id),
+    "received",
+  );
+  const sent = sortTradeRequestsForQueue(
+    tradeRequests.filter((request) => request.requester.id === currentUser.id),
+    "sent",
+  );
+  const queueSummary = getRequestQueueSummary(tradeRequests, currentUser.id);
+  const pendingReceivedCount = queueSummary.pendingReceivedCount;
+  const unreadMessageCount = queueSummary.unreadMessageCount;
 
   return (
     <main className="flex-1">
@@ -44,6 +52,26 @@ export default async function RequestsPage() {
           <p className="mt-2 max-w-2xl text-stone-600">
             Revisa ofertas recibidas, da seguimiento a las enviadas y abre el chat cuando una solicitud quede aceptada.
           </p>
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <RequestMetric
+              label="Por atender"
+              value={queueSummary.needsAttentionCount}
+              icon="bell"
+              tone={queueSummary.needsAttentionCount > 0 ? "attention" : "neutral"}
+            />
+            <RequestMetric
+              label="Mensajes sin leer"
+              value={queueSummary.unreadMessageCount}
+              icon="message"
+              tone={queueSummary.unreadMessageCount > 0 ? "attention" : "neutral"}
+            />
+            <RequestMetric
+              label="En negociación"
+              value={queueSummary.activeNegotiationsCount}
+              icon="trade"
+              tone={queueSummary.activeNegotiationsCount > 0 ? "active" : "neutral"}
+            />
+          </div>
         </div>
       </section>
 
@@ -53,6 +81,9 @@ export default async function RequestsPage() {
             <div className="mb-4 flex items-center gap-2">
               <Inbox aria-hidden="true" size={20} className="text-emerald-800" />
               <h2 className="text-xl font-semibold text-stone-950">Recibidas</h2>
+              <span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-md bg-stone-100 px-2 text-xs font-semibold text-stone-700">
+                {received.length.toLocaleString("es-MX")}
+              </span>
             </div>
             <div className="space-y-4">
               {received.length > 0 ? (
@@ -73,6 +104,9 @@ export default async function RequestsPage() {
             <div className="mb-4 flex items-center gap-2">
               <Send aria-hidden="true" size={20} className="text-emerald-800" />
               <h2 className="text-xl font-semibold text-stone-950">Enviadas</h2>
+              <span className="inline-flex min-h-7 min-w-7 items-center justify-center rounded-md bg-stone-100 px-2 text-xs font-semibold text-stone-700">
+                {sent.length.toLocaleString("es-MX")}
+              </span>
             </div>
             <div className="space-y-4">
               {sent.length > 0 ? (
@@ -136,6 +170,35 @@ export default async function RequestsPage() {
         </aside>
       </section>
     </main>
+  );
+}
+
+function RequestMetric({
+  label,
+  value,
+  icon,
+  tone,
+}: {
+  label: string;
+  value: number;
+  icon: "bell" | "message" | "trade";
+  tone: "attention" | "active" | "neutral";
+}) {
+  const Icon = icon === "message" ? MessageCircle : icon === "trade" ? Repeat2 : Bell;
+  const toneClassName = {
+    attention: "border-amber-200 bg-amber-50 text-amber-950",
+    active: "border-emerald-200 bg-emerald-50 text-emerald-950",
+    neutral: "border-stone-200 bg-stone-50 text-stone-700",
+  }[tone];
+
+  return (
+    <div className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-3 ${toneClassName}`}>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium">{label}</p>
+        <p className="mt-1 text-2xl font-semibold text-stone-950">{value.toLocaleString("es-MX")}</p>
+      </div>
+      <Icon aria-hidden="true" size={20} className="shrink-0" />
+    </div>
   );
 }
 
