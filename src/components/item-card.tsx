@@ -80,6 +80,13 @@ export function ItemCard({
     ? "inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold transition"
     : "inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition";
   const ownerControlIconSize = compact ? 14 : 16;
+  const actionButtonClassName = compact
+    ? "inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold transition"
+    : "inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition";
+  const actionIconSize = compact ? 14 : 16;
+  const requestMarkerClassName = compact
+    ? "mt-2 flex items-start gap-1.5 rounded-md border p-2 text-xs leading-5"
+    : "mt-3 flex items-start gap-2 rounded-md border p-3 text-sm leading-5";
 
   return (
     <article className={articleClassName}>
@@ -147,16 +154,18 @@ export function ItemCard({
           {requestMarker ? (
             <Link
               href={`/requests/${requestMarker.requestId}`}
-              className={`mt-3 flex items-start gap-2 rounded-md border p-3 text-sm leading-5 ${
+              className={`${requestMarkerClassName} ${
                 requestMarker.tone === "accepted"
                   ? "border-emerald-200 bg-emerald-50 text-emerald-950"
                   : "border-amber-200 bg-amber-50 text-amber-950"
               }`}
             >
-              <Inbox aria-hidden="true" size={16} className="mt-0.5 shrink-0" />
+              <Inbox aria-hidden="true" size={actionIconSize} className="mt-0.5 shrink-0" />
               <span>
                 <span className="block font-semibold">{requestMarker.label}</span>
-                <span>{requestMarker.description}</span>
+                <span className={compact ? "line-clamp-1" : undefined}>
+                  {requestMarker.description}
+                </span>
               </span>
             </Link>
           ) : null}
@@ -178,7 +187,7 @@ export function ItemCard({
           </div>
         ) : null}
 
-        {!isCompactOwnCard ? <TrustBadge profile={resolvedOwner} /> : null}
+        {!isCompactOwnCard ? <TrustBadge profile={resolvedOwner} compact={compact} /> : null}
 
         {isOwnItem ? (
           <div className={compact ? "grid gap-1.5" : "grid gap-2"}>
@@ -230,22 +239,22 @@ export function ItemCard({
         ) : requestMarker ? (
           <Link
             href={`/requests/${requestMarker.requestId}`}
-            className={`inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition ${
+            className={`${actionButtonClassName} ${
               requestMarker.tone === "accepted"
                 ? "bg-emerald-700 text-white hover:bg-emerald-800"
                 : "bg-amber-600 text-white hover:bg-amber-700"
             }`}
           >
             {requestMarker.cta}
-            <ArrowRight aria-hidden="true" size={16} />
+            <ArrowRight aria-hidden="true" size={actionIconSize} />
           </Link>
         ) : (
           <Link
             href={`/requests/new?item=${item.id}`}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-800"
+            className={`${actionButtonClassName} bg-emerald-700 text-white hover:bg-emerald-800`}
           >
             Proponer trueque
-            <ArrowRight aria-hidden="true" size={16} />
+            <ArrowRight aria-hidden="true" size={actionIconSize} />
           </Link>
         )}
       </div>

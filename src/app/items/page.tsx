@@ -199,12 +199,13 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
           </p>
         </div>
         {sortedItems.length > 0 ? (
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {sortedItems.map((item) => (
               <ItemCard
                 key={item.id}
                 item={item}
                 owner={ownersById[item.ownerId]}
+                compact
                 currentProfile={currentProfile}
                 requestMarker={requestMarkersByItemId.get(item.id)}
                 matchSignal={matchSignalsByItemId.get(item.id)}

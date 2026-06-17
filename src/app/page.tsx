@@ -120,12 +120,13 @@ export default async function Home() {
             Ver todo
           </Link>
         </div>
-        <div className="mt-6 grid gap-5 md:grid-cols-3">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {featuredItems.map((item) => (
             <ItemCard
               key={item.id}
               item={item}
               owner={ownersById[item.ownerId]}
+              compact
               currentProfile={currentProfile}
               isSaved={savedItemIdsSet.has(item.id)}
             />
