@@ -1,4 +1,6 @@
-import { Clock3, MessageCircle, ShieldCheck } from "lucide-react";
+import { Clock3, MapPin, MessageCircle, Repeat2, ShieldCheck } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CounterofferForm, CounterofferSummary } from "@/components/counteroffer-panel";
@@ -13,6 +15,7 @@ import {
   CompleteTradeRequestForm,
   RejectTradeRequestForm,
 } from "@/components/trade-request-status-form";
+import { conditionLabels } from "@/lib/constants";
 import {
   getCurrentProfile,
   getCurrentUserRatingForRequest,
@@ -20,8 +23,9 @@ import {
   getMessagesForRequest,
   getTradeRequestsForCurrentUser,
 } from "@/lib/data";
+import { getMexicoStateDisplayName } from "@/lib/mexico-locations";
 import { canUseTradeRequestChat } from "@/lib/trade-rules";
-import type { TradeRequestStatus } from "@/lib/types";
+import type { TradeRequest, TradeRequestStatus } from "@/lib/types";
 
 type RequestDetailPageProps = {
   params: Promise<{
@@ -69,7 +73,8 @@ export default async function RequestDetailPage({ params }: RequestDetailPagePro
       <LiveRefresh intervalMs={7000} />
       <MarkRequestRead requestId={request.id} />
       <section className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_340px] lg:px-8">
-        <div className="rounded-lg border border-stone-200 bg-white shadow-sm">
+        <div className="space-y-4">
+          <div className="rounded-lg border border-stone-200 bg-white shadow-sm">
           <div className="border-b border-stone-200 p-5">
             <div className="flex items-center gap-2 text-sm font-semibold text-emerald-800">
               {canChat ? (
@@ -108,6 +113,8 @@ export default async function RequestDetailPage({ params }: RequestDetailPagePro
               </div>
             </div>
           )}
+          </div>
+          <TradeExchangeSummary request={request} />
         </div>
 
         <aside className="space-y-4">
@@ -232,6 +239,104 @@ export default async function RequestDetailPage({ params }: RequestDetailPagePro
         </aside>
       </section>
     </main>
+  );
+}
+
+function TradeExchangeSummary({ request }: { request: TradeRequest }) {
+  return (
+    <section className="rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-emerald-800">Resumen del trueque</p>
+          <h2 className="mt-1 text-lg font-semibold text-stone-950">
+            Artículos de esta solicitud
+          </h2>
+        </div>
+        <span className="rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800">
+          Sin dinero
+        </span>
+      </div>
+      <p className="mt-2 text-sm leading-6 text-stone-600">
+        Ten a la mano qué se pidió y qué se ofreció antes de responder o confirmar.
+      </p>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_44px_1fr]">
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase text-stone-500">
+            Artículo solicitado
+          </p>
+          <TradeExchangeItem item={request.requestedItem} ownerName={request.receiver.displayName} />
+        </div>
+
+        <div className="hidden items-center justify-center lg:flex">
+          <span className="grid size-10 place-items-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-800">
+            <Repeat2 aria-hidden="true" size={18} />
+          </span>
+        </div>
+
+        <div>
+          <p className="mb-2 text-xs font-semibold uppercase text-stone-500">
+            Oferta propuesta
+          </p>
+          <div className="grid gap-2">
+            {request.offeredItems.map((item) => (
+              <TradeExchangeItem
+                key={item.id}
+                item={item}
+                ownerName={request.requester.displayName}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TradeExchangeItem({
+  item,
+  ownerName,
+}: {
+  item: TradeRequest["requestedItem"];
+  ownerName: string;
+}) {
+  return (
+    <article className="grid grid-cols-[88px_1fr] gap-3 rounded-lg border border-stone-200 bg-stone-50 p-3">
+      <Link href={`/items/${item.id}`} className="relative aspect-square overflow-hidden rounded-md bg-stone-100">
+        <Image
+          src={item.photoUrls[0] ?? "/window.svg"}
+          alt={item.title}
+          fill
+          sizes="88px"
+          className="object-cover"
+          unoptimized
+        />
+      </Link>
+      <div className="min-w-0">
+        <Link
+          href={`/items/${item.id}`}
+          className="line-clamp-1 text-sm font-semibold text-stone-950 hover:text-emerald-800"
+        >
+          {item.title}
+        </Link>
+        <p className="mt-1 truncate text-xs font-medium text-emerald-800">
+          De {ownerName}
+        </p>
+        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-stone-600">
+          <span className="inline-flex items-center gap-1">
+            <Repeat2 aria-hidden="true" size={13} className="text-emerald-700" />
+            {conditionLabels[item.condition]}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <MapPin aria-hidden="true" size={13} />
+            {item.city}, {getMexicoStateDisplayName(item.state)}
+          </span>
+        </div>
+        <p className="mt-2 line-clamp-2 text-xs leading-5 text-stone-500">
+          {item.knownDefects}
+        </p>
+      </div>
+    </article>
   );
 }
 
