@@ -98,7 +98,7 @@ export function RequestChat({
 
   return (
     <>
-      <div className="space-y-4 p-5">
+      <div className="max-h-[58vh] space-y-4 overflow-y-auto p-4 sm:p-5">
         {messages.length === 0 ? (
           <div className="rounded-md border border-dashed border-stone-300 bg-stone-50 p-5 text-sm leading-6 text-stone-600">
             El chat ya está abierto. Escribe el primer mensaje para acordar detalles del trueque sin pagos, envíos gestionados ni entregas mediadas por Trueka.
@@ -116,7 +116,7 @@ export function RequestChat({
                 <UserAvatar src={message.senderAvatarUrl} alt={message.sender} size={36} />
               ) : null}
               <div
-                className={`max-w-[82%] rounded-lg px-4 py-3 ${
+                className={`max-w-[84%] rounded-lg px-3 py-2.5 sm:px-4 sm:py-3 ${
                   isMine ? "bg-emerald-700 text-white" : "bg-stone-100 text-stone-800"
                 }`}
               >
@@ -147,15 +147,15 @@ export function RequestChat({
         })}
       </div>
 
-      <form className="border-t border-stone-200 p-5" onSubmit={sendMessage}>
+      <form className="border-t border-stone-200 bg-white p-4 sm:p-5" onSubmit={sendMessage}>
         <label className="sr-only" htmlFor="body">
           Escribir mensaje
         </label>
-        <div className="grid gap-3 sm:grid-cols-[1fr_48px]">
+        <div className="grid grid-cols-[1fr_48px] gap-2 sm:gap-3">
           <textarea
             id="body"
             name="body"
-            rows={3}
+            rows={2}
             maxLength={maxMessageLength + 1}
             value={body}
             onChange={(event) => setBody(event.target.value)}

@@ -74,8 +74,46 @@ export default async function RequestDetailPage({ params }: RequestDetailPagePro
       <LiveRefresh intervalMs={7000} />
       <MarkRequestRead requestId={request.id} />
       <section className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_340px] lg:px-8">
+        <section className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm lg:hidden">
+          <p className="text-sm font-semibold text-emerald-800">Estado actual</p>
+          <h2 className="mt-1 text-lg font-semibold text-stone-950">
+            {getRequestStatusLabel(request.status)}
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-stone-600">
+            {getRequestStatusDescription(request.status)}
+          </p>
+          <div className="mt-4 grid gap-2">
+            {canRespond ? (
+              <>
+                <AcceptTradeRequestForm tradeRequestId={request.id} />
+                <RejectTradeRequestForm tradeRequestId={request.id} />
+              </>
+            ) : null}
+            {canCancel ? <CancelTradeRequestForm tradeRequestId={request.id} /> : null}
+            {request.status === "accepted" ? (
+              <>
+                <CompletionProgressPanel request={request} currentUserId={currentUser.id} />
+                <CompleteTradeRequestForm
+                  tradeRequestId={request.id}
+                  currentUserConfirmed={currentUserConfirmed}
+                  otherUserConfirmed={otherUserConfirmed}
+                />
+              </>
+            ) : null}
+            {canChat ? (
+              <a
+                href="#chat"
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-700 hover:bg-stone-50"
+              >
+                <MessageCircle aria-hidden="true" size={16} />
+                Ir al chat
+              </a>
+            ) : null}
+          </div>
+        </section>
+
         <div className="space-y-4">
-          <div className="rounded-lg border border-stone-200 bg-white shadow-sm">
+          <div id="chat" className="scroll-mt-24 rounded-lg border border-stone-200 bg-white shadow-sm">
           <div className="border-b border-stone-200 p-5">
             <div className="flex items-center gap-2 text-sm font-semibold text-emerald-800">
               {canChat ? (
