@@ -6,16 +6,18 @@ import { appDescription, appName, siteUrl } from "@/lib/app-config";
 
 import "./globals.css";
 
+const defaultTitle = "Trueka | Te lo cambio";
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: appName,
   title: {
-    default: "Trueka | Lo que tienes por lo que quieres",
+    default: defaultTitle,
     template: `%s | ${appName}`,
   },
   description: appDescription,
   openGraph: {
-    title: "Trueka | Lo que tienes por lo que quieres",
+    title: defaultTitle,
     description: appDescription,
     siteName: appName,
     locale: "es_MX",
@@ -31,7 +33,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Trueka | Lo que tienes por lo que quieres",
+    title: defaultTitle,
     description: appDescription,
     images: ["/trueka-logo.png"],
   },
