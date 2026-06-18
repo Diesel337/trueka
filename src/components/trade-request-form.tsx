@@ -34,21 +34,21 @@ export function TradeRequestForm({
           {offeredItems.map((item) => (
             <label
               key={item.id}
-              className="grid gap-4 rounded-lg border border-stone-200 p-3 sm:grid-cols-[120px_1fr_auto]"
+              className="grid grid-cols-[84px_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-stone-200 p-3 sm:grid-cols-[120px_1fr_auto] sm:items-start"
             >
-              <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-stone-100">
+              <div className="relative aspect-square overflow-hidden rounded-md bg-stone-100 sm:aspect-[4/3]">
                 <Image
                   src={item.photoUrls[0]}
                   alt={item.title}
                   fill
-                  sizes="120px"
+                  sizes="(min-width: 640px) 120px, 84px"
                   className="object-cover"
                   unoptimized
                 />
               </div>
-              <div>
-                <p className="font-semibold text-stone-950">{item.title}</p>
-                <p className="mt-1 text-sm leading-6 text-stone-600">{item.knownDefects}</p>
+              <div className="min-w-0">
+                <p className="line-clamp-2 font-semibold text-stone-950">{item.title}</p>
+                <p className="mt-1 line-clamp-2 text-sm leading-6 text-stone-600">{item.knownDefects}</p>
               </div>
               <input
                 name="offeredItemIds"

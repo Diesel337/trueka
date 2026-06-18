@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { MapPin, Pencil, ShieldCheck, Tags } from "lucide-react";
+import { ArrowRight, MapPin, Pencil, ShieldCheck, Tags } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -117,7 +117,7 @@ export default async function ItemDetailPage({ params }: ItemDetailPageProps) {
     : null;
 
   return (
-    <main className="flex-1">
+    <main className={isOwnItem ? "flex-1" : "flex-1 pb-24 lg:pb-0"}>
       <section className="mx-auto grid max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1.15fr)_420px] lg:px-8">
         <div className="space-y-6">
           <ItemPhotoGallery title={item.title} photoUrls={item.photoUrls} />
@@ -218,9 +218,10 @@ export default async function ItemDetailPage({ params }: ItemDetailPageProps) {
             ) : (
               <Link
                 href={`/requests/new?item=${item.id}`}
-                className="mt-3 inline-flex w-full items-center justify-center rounded-md bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-800"
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-800"
               >
                 Proponer trueque
+                <ArrowRight aria-hidden="true" size={16} />
               </Link>
             )}
             {isOwnItem ? (
@@ -256,6 +257,21 @@ export default async function ItemDetailPage({ params }: ItemDetailPageProps) {
           </section>
         </aside>
       </section>
+
+      {!isOwnItem ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-stone-200 bg-white/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_30px_rgba(28,25,23,0.10)] backdrop-blur lg:hidden">
+          <Link
+            href={`/requests/new?item=${item.id}`}
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800"
+          >
+            Proponer trueque
+            <ArrowRight aria-hidden="true" size={17} />
+          </Link>
+          <p className="mt-1 text-center text-[11px] font-medium text-stone-500">
+            Art&iacute;culos por art&iacute;culos. Sin dinero.
+          </p>
+        </div>
+      ) : null}
     </main>
   );
 }

@@ -114,15 +114,15 @@ export default async function NewRequestPage({ searchParams }: NewRequestPagePro
           )}
         </div>
 
-        <aside className="space-y-4">
+        <aside className="order-first space-y-4 lg:order-none">
           <section className="rounded-lg border border-stone-200 bg-white p-4">
             <p className="text-sm font-semibold text-stone-500">Artículo solicitado</p>
-            <div className="relative mt-3 aspect-[4/3] overflow-hidden rounded-md bg-stone-100">
+            <div className="relative mt-3 aspect-[16/9] overflow-hidden rounded-md bg-stone-100 sm:aspect-[4/3]">
               <Image
                 src={requestedItem.photoUrls[0]}
                 alt={requestedItem.title}
                 fill
-                sizes="360px"
+                sizes="(min-width: 640px) 360px, 96px"
                 className="object-cover"
                 unoptimized
               />
