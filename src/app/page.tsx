@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { ArrowRight, Plus, Search, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
@@ -5,6 +6,20 @@ import { ItemCard } from "@/components/item-card";
 import { LocationSelectFields } from "@/components/location-select-fields";
 import { getCurrentProfile, getItemsResult, getSavedItemIdsForCurrentUser } from "@/lib/data";
 import { guadalajaraMetroLocationValue } from "@/lib/mexico-locations";
+
+const homeTitle = "Trueka | Te lo cambio";
+
+export const metadata: Metadata = {
+  title: {
+    absolute: homeTitle,
+  },
+  openGraph: {
+    title: homeTitle,
+  },
+  twitter: {
+    title: homeTitle,
+  },
+};
 
 export default async function Home() {
   const [{ items, ownersById, categories }, currentProfile] = await Promise.all([
