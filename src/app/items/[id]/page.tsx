@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { MapPin, Pencil, ShieldCheck, Tags } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -7,7 +8,9 @@ import { ItemStatusForm } from "@/components/item-status-form";
 import { RetireItemForm } from "@/components/retire-item-form";
 import { BlockUserForm, ReportForm } from "@/components/safety-actions";
 import { SaveItemButton } from "@/components/save-item-button";
+import { ShareItemButton } from "@/components/share-item-button";
 import { TrustBadge } from "@/components/trust-badge";
+import { siteUrl } from "@/lib/app-config";
 import { conditionLabels, valueRangeLabels } from "@/lib/constants";
 import {
   getCurrentProfile,
@@ -27,6 +30,57 @@ type ItemDetailPageProps = {
   }>;
 };
 
+export async function generateMetadata({ params }: ItemDetailPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const detail = await getItemDetail(id);
+
+  if (!detail) {
+    return {
+      title: "Publicación no encontrada",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+
+  const { item } = detail;
+  const itemUrl = `${siteUrl}/items/${item.id}`;
+  const location = `${item.city}, ${getMexicoStateDisplayName(item.state)}`;
+  const description = truncateMetadataDescription(
+    `${item.title} en ${location}. Trueka: artículos por artículos, sin pagos ni envíos gestionados.`,
+  );
+  const imageUrl = getAbsoluteItemImageUrl(item.photoUrls[0]);
+
+  return {
+    title: item.title,
+    description,
+    alternates: {
+      canonical: itemUrl,
+    },
+    openGraph: {
+      title: `${item.title} en Trueka`,
+      description,
+      url: itemUrl,
+      type: "article",
+      images: imageUrl
+        ? [
+            {
+              url: imageUrl,
+              alt: item.title,
+            },
+          ]
+        : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${item.title} en Trueka`,
+      description,
+      images: imageUrl ? [imageUrl] : undefined,
+    },
+  };
+}
+
 export default async function ItemDetailPage({ params }: ItemDetailPageProps) {
   const { id } = await params;
   const [detail, currentProfile] = await Promise.all([
@@ -39,6 +93,7 @@ export default async function ItemDetailPage({ params }: ItemDetailPageProps) {
   }
 
   const { item, owner } = detail;
+  const itemUrl = `${siteUrl}/items/${item.id}`;
   const isOwnItem = currentProfile?.id === item.ownerId;
   const [savedItemIds, ownActiveItems, profileInterestTags] = currentProfile
     ? await Promise.all([
@@ -183,6 +238,9 @@ export default async function ItemDetailPage({ params }: ItemDetailPageProps) {
                 </div>
               </div>
             ) : null}
+            <div className="mt-3">
+              <ShareItemButton title={item.title} shareUrl={itemUrl} />
+            </div>
             <p className="mt-3 text-xs leading-5 text-stone-500">
               La propuesta se arma con artículos propios. No hay pagos ni envíos gestionados.
             </p>
@@ -200,4 +258,20 @@ export default async function ItemDetailPage({ params }: ItemDetailPageProps) {
       </section>
     </main>
   );
+}
+
+function getAbsoluteItemImageUrl(imageUrl?: string) {
+  if (!imageUrl || imageUrl === "/window.svg") {
+    return undefined;
+  }
+
+  try {
+    return new URL(imageUrl, siteUrl).toString();
+  } catch {
+    return undefined;
+  }
+}
+
+function truncateMetadataDescription(value: string) {
+  return value.length > 155 ? `${value.slice(0, 152).trim()}...` : value;
 }
