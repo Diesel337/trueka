@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
 
 import { AutoSubmitSearchInput } from "@/components/auto-submit-search-input";
 import { ItemCard, type ItemMatchSignal, type ItemRequestMarker } from "@/components/item-card";
@@ -38,7 +38,9 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
   const filters = await searchParams;
   const currentProfile = await getCurrentProfile();
   const typedPostalCode = filters.postalCode?.trim() ? filters.postalCode.trim() : undefined;
-  const selectedSort = filters.sort ?? (typedPostalCode ? "nearby" : "newest");
+  const defaultSort = typedPostalCode ? "nearby" : "newest";
+  const selectedSort = filters.sort ?? defaultSort;
+  const activeAdvancedFilterCount = getActiveAdvancedFilterCount(filters, selectedSort, defaultSort);
   const effectivePostalCode = typedPostalCode ?? (selectedSort === "nearby" ? currentProfile?.postalCode : undefined);
   const effectiveFilters = {
     ...filters,
@@ -91,22 +93,12 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
           </p>
 
           <form className="mt-6 rounded-lg border border-stone-200 bg-white p-3 shadow-sm">
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_180px_220px_150px_220px_48px]">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_180px_220px_48px]">
               <AutoSubmitSearchInput
                 name="q"
                 defaultValue={filters.q}
                 placeholder="Buscar por artículo o detalle"
                 className="min-h-11 w-full min-w-0 rounded-md border border-stone-200 px-3 text-sm outline-none focus:border-emerald-600"
-              />
-              <LocationSelectFields
-                defaultState={filters.state ?? ""}
-                defaultMunicipality={filters.city ?? ""}
-                includeAllStates
-                includeAllMunicipalities
-                includeZones
-                required={false}
-                hideLabels
-                className="contents"
               />
               <input
                 name="postalCode"
@@ -132,13 +124,39 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
               </select>
               <button
                 aria-label="Aplicar filtros"
-                className="grid min-h-11 min-w-0 place-items-center rounded-md bg-emerald-700 text-white hover:bg-emerald-800 md:col-span-2 xl:col-span-1"
+                className="grid min-h-11 min-w-0 place-items-center rounded-md bg-emerald-700 text-white hover:bg-emerald-800"
               >
                 <Search aria-hidden="true" size={19} />
               </button>
             </div>
 
-            <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <details
+              className="mt-3 [&:not([open])>div]:hidden md:[&:not([open])>div]:grid"
+              open={activeAdvancedFilterCount > 0}
+            >
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-md border border-stone-200 px-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-50 md:hidden [&::-webkit-details-marker]:hidden">
+                <span className="inline-flex items-center gap-2">
+                  <SlidersHorizontal aria-hidden="true" size={17} />
+                  M&aacute;s filtros
+                </span>
+                {activeAdvancedFilterCount > 0 ? (
+                  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800">
+                    {activeAdvancedFilterCount}
+                  </span>
+                ) : null}
+              </summary>
+
+              <div className="mt-3 grid gap-3 md:mt-0 md:grid md:grid-cols-2 xl:grid-cols-4">
+                <LocationSelectFields
+                  defaultState={filters.state ?? ""}
+                  defaultMunicipality={filters.city ?? ""}
+                  includeAllStates
+                  includeAllMunicipalities
+                  includeZones
+                  required={false}
+                  hideLabels
+                  className="contents"
+                />
               <select
                 name="sort"
                 defaultValue={selectedSort}
@@ -207,7 +225,8 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
                 <option value="">Cualquier perfil</option>
                 <option value="true">Correo o teléfono verificado</option>
               </select>
-            </div>
+              </div>
+            </details>
             {selectedSort === "nearby" && !effectivePostalCode ? (
               <p className="mt-3 text-sm leading-6 text-amber-800">
                 Agrega un codigo postal en el filtro o en tu perfil para ordenar por cercania.
@@ -249,6 +268,24 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
       </section>
     </main>
   );
+}
+
+function getActiveAdvancedFilterCount(
+  filters: Awaited<ItemsPageProps["searchParams"]>,
+  selectedSort: string,
+  defaultSort: string,
+) {
+  return [
+    filters.state,
+    filters.city,
+    filters.condition,
+    filters.valueRange,
+    filters.acceptsOtherCities,
+    filters.hasRequest,
+    filters.saved,
+    filters.verifiedProfile,
+    selectedSort !== defaultSort ? selectedSort : "",
+  ].filter(Boolean).length;
 }
 
 function buildReceivedRequestMarkers(tradeRequests: TradeRequest[], currentProfileId?: string) {
