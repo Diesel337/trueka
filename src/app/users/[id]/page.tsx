@@ -1,8 +1,9 @@
-import { CalendarDays, CheckCircle2, MapPin, Star } from "lucide-react";
+import { CalendarDays, MapPin, Star } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ItemCard } from "@/components/item-card";
+import { ProfileReviewsSection } from "@/components/profile-reviews-section";
 import { BlockUserForm, ReportForm } from "@/components/safety-actions";
 import { TrustBadge } from "@/components/trust-badge";
 import { UserAvatar } from "@/components/user-avatar";
@@ -84,56 +85,10 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div>
-          <h2 className="text-2xl font-semibold text-stone-950">Reseñas recientes</h2>
-          <p className="mt-2 text-stone-600">
-            Comentarios de trueques que ambas personas marcaron como realizados.
-          </p>
-        </div>
-
-        {reviews.length > 0 ? (
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {reviews.map((review) => (
-              <article key={review.id} className="rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex min-w-0 items-center gap-3">
-                    <UserAvatar src={review.reviewerAvatarUrl} alt={review.reviewerName} size={40} />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-stone-950">{review.reviewerName}</p>
-                      <p className="text-xs text-stone-500">
-                        {new Date(review.createdAt).toLocaleDateString("es-MX")}
-                      </p>
-                    </div>
-                  </div>
-                  <Stars value={review.rating} />
-                </div>
-                {review.comment ? (
-                  <p className="mt-4 text-sm leading-6 text-stone-700">{review.comment}</p>
-                ) : null}
-                <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold">
-                  {review.itemMatchedDescription ? (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-emerald-800">
-                      <CheckCircle2 aria-hidden="true" size={14} />
-                      Artículo coincidía
-                    </span>
-                  ) : null}
-                  {review.userWasReliable ? (
-                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-emerald-800">
-                      <CheckCircle2 aria-hidden="true" size={14} />
-                      Persona confiable
-                    </span>
-                  ) : null}
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className="mt-6 rounded-lg border border-dashed border-stone-300 bg-white p-6 text-sm text-stone-600">
-            Todavía no hay reseñas públicas de trueques completados.
-          </div>
-        )}
-      </section>
+      <ProfileReviewsSection
+        reviews={reviews}
+        className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8"
+      />
 
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex items-end justify-between gap-4">
@@ -173,21 +128,6 @@ function Metric({ label, value, icon }: { label: string; value: string; icon?: "
         {icon === "star" ? <Star aria-hidden="true" size={15} className="text-amber-600" /> : null}
         {value}
       </span>
-    </div>
-  );
-}
-
-function Stars({ value }: { value: number }) {
-  return (
-    <div className="flex gap-0.5 text-amber-600" aria-label={`${value} de 5`}>
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          aria-hidden="true"
-          size={15}
-          fill={star <= value ? "currentColor" : "none"}
-        />
-      ))}
     </div>
   );
 }

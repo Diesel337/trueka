@@ -2,6 +2,7 @@ import { CheckCircle2, CircleDashed, MapPin, Star } from "lucide-react";
 import Link from "next/link";
 
 import { PhoneVerificationForm } from "@/components/phone-verification-form";
+import { ProfileReviewsSection } from "@/components/profile-reviews-section";
 import { ProfileForm } from "@/components/profile-form";
 import { UnblockUserForm } from "@/components/safety-actions";
 import { UserAvatar } from "@/components/user-avatar";
@@ -11,6 +12,7 @@ import {
   getCurrentProfile,
   getCurrentProfilePrivateInterestTags,
   getOwnProfilePageData,
+  getProfileReviews,
 } from "@/lib/data";
 import { getMexicoStateDisplayName } from "@/lib/mexico-locations";
 
@@ -36,11 +38,12 @@ export default async function ProfilePage() {
     );
   }
 
-  const [profileData, catalog, selectedPrivateInterestTags, blockedProfiles] = await Promise.all([
+  const [profileData, catalog, selectedPrivateInterestTags, blockedProfiles, reviews] = await Promise.all([
     getOwnProfilePageData(),
     getCatalogData(),
     getCurrentProfilePrivateInterestTags(),
     getBlockedProfilesForCurrentUser(),
+    getProfileReviews(currentUser.id),
   ]);
 
   if (!profileData) {
@@ -108,6 +111,14 @@ export default async function ProfilePage() {
                 selectedTagSlugs={selectedPrivateInterestTags.map((tag) => tag.slug)}
               />
             </div>
+
+            <ProfileReviewsSection
+              reviews={reviews}
+              title="Tus reseñas recibidas"
+              description="Comentarios que otras personas dejaron después de trueques completados."
+              emptyMessage="Todavía no tienes reseñas de trueques completados."
+              className="mt-6"
+            />
 
             <section className="mt-6 rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
               <h2 className="text-xl font-semibold text-stone-950">Usuarios bloqueados</h2>
