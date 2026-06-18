@@ -1,4 +1,5 @@
 import { forbiddenTradeRequestFieldNames } from "./constants";
+import { isNearbyPostalCode } from "./postal-code-proximity";
 import type { Item, MatchScore, Profile, TradeRequestStatus, ValueRange } from "./types";
 
 type OfferedItemDraft = Pick<Item, "id" | "ownerId" | "status" | "moderationStatus">;
@@ -121,10 +122,10 @@ export function canUseTradeRequestChat(status: TradeRequestStatus) {
 }
 
 export function calculateMatchScore(input: {
-  viewer: Pick<Profile, "city" | "state" | "ratingAvg" | "emailVerified" | "phoneVerified">;
+  viewer: Pick<Profile, "city" | "state" | "postalCode" | "ratingAvg" | "emailVerified" | "phoneVerified">;
   item: Item;
   viewerPrivateInterestSlugs: string[];
-  owner: Pick<Profile, "city" | "state" | "ratingAvg" | "emailVerified" | "phoneVerified">;
+  owner: Pick<Profile, "city" | "state" | "postalCode" | "ratingAvg" | "emailVerified" | "phoneVerified">;
 }) {
   const signals: MatchScore["signals"] = [];
   const itemTagSlugs = new Set([
@@ -138,7 +139,9 @@ export function calculateMatchScore(input: {
     signals.push({ label: "Coincide con tus intereses privados", points: 35 });
   }
 
-  if (areSameCity(input.viewer, input.owner)) {
+  if (isNearbyPostalCode(input.item.postalCode, input.viewer.postalCode)) {
+    signals.push({ label: "Esta cerca de tu codigo postal", points: 25 });
+  } else if (areSameCity(input.viewer, input.owner)) {
     signals.push({ label: "Está en tu zona", points: 20 });
   } else if (input.item.acceptsOtherCities) {
     signals.push({ label: "Acepta propuestas de otra ciudad", points: 10 });

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { conditionLabels, valueRangeLabels } from "@/lib/constants";
 import { getMexicoStateDisplayName } from "@/lib/mexico-locations";
 import { currentUser, getOwner } from "@/lib/mock-data";
+import { isNearbyPostalCode } from "@/lib/postal-code-proximity";
 import { areSameCity } from "@/lib/trade-rules";
 import type { Item, ItemStatus, Profile } from "@/lib/types";
 
@@ -57,6 +58,7 @@ export function ItemCard({
   const primaryPhotoUrl = item.photoUrls[0];
   const personalSignal = getPersonalSignal({
     currentProfile,
+    item,
     isOwnItem,
     matchSignal,
     owner: resolvedOwner,
@@ -280,11 +282,13 @@ function getItemStatusLabel(item: Item) {
 
 function getPersonalSignal({
   currentProfile,
+  item,
   isOwnItem,
   matchSignal,
   owner,
 }: {
   currentProfile?: Profile | null;
+  item: Item;
   isOwnItem: boolean;
   matchSignal?: ItemMatchSignal;
   owner: Profile;
@@ -295,6 +299,10 @@ function getPersonalSignal({
 
   if (matchSignal) {
     return matchSignal;
+  }
+
+  if (isNearbyPostalCode(item.postalCode, currentProfile.postalCode)) {
+    return "nearby";
   }
 
   return areSameCity(currentProfile, owner) ? "nearby" : null;

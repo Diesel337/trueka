@@ -20,10 +20,20 @@ import {
 import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCanonicalMunicipalityName, isValidStateMunicipality } from "@/lib/mexico-locations";
+import { normalizePostalCode } from "@/lib/postal-code-proximity";
 import { canCompleteTradeRequest, canUseTradeRequestChat } from "@/lib/trade-rules";
 import type { Item, ItemStatus, TradeRequestStatus } from "@/lib/types";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
+
+const postalCodeSchema = z.preprocess(
+  (value) => (typeof value === "string" ? value.trim() : ""),
+  z.string()
+    .refine((value) => value === "" || normalizePostalCode(value) === value, {
+      message: "Escribe un codigo postal de 5 digitos.",
+    })
+    .transform((value) => value || undefined),
+);
 
 const createTradeRequestSchema = z.object({
   requestedItemId: z.string().uuid(),
@@ -49,6 +59,7 @@ const createItemSchema = z.object({
   knownDefects: z.string().trim().min(3),
   city: z.string().trim().min(2),
   state: z.string().trim().min(2),
+  postalCode: postalCodeSchema,
   approximateZone: z.string().trim().optional(),
   publicPreferences: z.string().trim().optional(),
 });
@@ -140,6 +151,7 @@ const profileSchema = z.object({
   displayName: z.string().trim().min(2).max(80),
   city: z.string().trim().min(2).max(80),
   state: z.string().trim().min(2).max(80),
+  postalCode: postalCodeSchema,
   bio: z.string().trim().max(240).optional(),
 });
 
@@ -388,6 +400,7 @@ export async function createItemAction(
     knownDefects: formData.get("knownDefects"),
     city: formData.get("city"),
     state: formData.get("state"),
+    postalCode: formData.get("postalCode"),
     approximateZone: formData.get("approximateZone"),
     publicPreferences: formData.get("publicPreferences"),
   });
@@ -480,6 +493,7 @@ export async function createItemAction(
       condition: parsed.data.condition,
       city: canonicalCity,
       state: parsed.data.state,
+      postal_code: emptyToNull(parsed.data.postalCode),
       approximate_zone: emptyToNull(parsed.data.approximateZone),
       approximate_value_range: emptyToNull(parsed.data.approximateValueRange),
       accepts_multiple_items: formData.has("acceptsMultipleItems"),
@@ -494,7 +508,8 @@ export async function createItemAction(
   if (itemError || !item) {
     return {
       ok: false,
-      message: itemError?.message ?? "No se pudo crear la publicación.",
+      message: getPostalCodePersistenceErrorMessage(itemError?.message)
+        ?? "No se pudo crear la publicación.",
     };
   }
 
@@ -619,6 +634,7 @@ export async function updateItemAction(
     knownDefects: formData.get("knownDefects"),
     city: formData.get("city"),
     state: formData.get("state"),
+    postalCode: formData.get("postalCode"),
     approximateZone: formData.get("approximateZone"),
     publicPreferences: formData.get("publicPreferences"),
   });
@@ -781,6 +797,7 @@ export async function updateItemAction(
       condition: parsed.data.condition,
       city: canonicalCity,
       state: parsed.data.state,
+      postal_code: emptyToNull(parsed.data.postalCode),
       approximate_zone: emptyToNull(parsed.data.approximateZone),
       approximate_value_range: emptyToNull(parsed.data.approximateValueRange),
       accepts_multiple_items: formData.has("acceptsMultipleItems"),
@@ -801,7 +818,7 @@ export async function updateItemAction(
 
     return {
       ok: false,
-      message: updateError.message,
+      message: getPostalCodePersistenceErrorMessage(updateError.message) ?? updateError.message,
     };
   }
 
@@ -2195,13 +2212,14 @@ export async function updateProfileAction(
     displayName: formData.get("displayName"),
     city: formData.get("city"),
     state: formData.get("state"),
+    postalCode: formData.get("postalCode"),
     bio: formData.get("bio"),
   });
 
   if (!parsed.success) {
     return {
       ok: false,
-      message: "Revisa nombre, ciudad, estado y bio.",
+      message: "Revisa nombre, ciudad, estado, codigo postal y bio.",
     };
   }
 
@@ -2271,6 +2289,7 @@ export async function updateProfileAction(
       display_name: parsed.data.displayName,
       city: canonicalCity,
       state: parsed.data.state,
+      postal_code: emptyToNull(parsed.data.postalCode),
       bio: emptyToNull(parsed.data.bio),
       ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
     })
@@ -2283,7 +2302,7 @@ export async function updateProfileAction(
 
     return {
       ok: false,
-      message: error.message,
+      message: getPostalCodePersistenceErrorMessage(error.message) ?? error.message,
     };
   }
 
@@ -2495,6 +2514,7 @@ export async function completeOnboardingAction(
     displayName: formData.get("displayName"),
     city: formData.get("city"),
     state: formData.get("state"),
+    postalCode: formData.get("postalCode"),
     bio: formData.get("bio"),
     next: formData.get("next"),
   });
@@ -2502,7 +2522,7 @@ export async function completeOnboardingAction(
   if (!parsed.success) {
     return {
       ok: false,
-      message: "Revisa nombre, municipio, estado y bio.",
+      message: "Revisa nombre, municipio, estado, codigo postal y bio.",
     };
   }
 
@@ -2583,6 +2603,7 @@ export async function completeOnboardingAction(
       display_name: parsed.data.displayName,
       city: canonicalCity,
       state: parsed.data.state,
+      postal_code: emptyToNull(parsed.data.postalCode),
       bio: emptyToNull(parsed.data.bio),
       onboarding_completed_at: new Date().toISOString(),
       ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
@@ -2596,7 +2617,7 @@ export async function completeOnboardingAction(
 
     return {
       ok: false,
-      message: getOnboardingErrorMessage(error.message),
+      message: getPostalCodePersistenceErrorMessage(error.message) ?? getOnboardingErrorMessage(error.message),
     };
   }
 
@@ -3073,6 +3094,20 @@ function emptyToNull(value?: string) {
   return value?.trim() ? value.trim() : null;
 }
 
+function getPostalCodePersistenceErrorMessage(message?: string | null) {
+  const normalizedMessage = message?.toLocaleLowerCase("es-MX") ?? "";
+
+  if (
+    normalizedMessage.includes("postal_code")
+    || normalizedMessage.includes("profiles_postal_code_format")
+    || normalizedMessage.includes("items_postal_code_format")
+  ) {
+    return "Falta correr la migracion 0020 de codigo postal en Supabase.";
+  }
+
+  return null;
+}
+
 function getReportTargetKey(input: {
   reportedUserId?: string;
   reportedItemId?: string;
@@ -3228,6 +3263,10 @@ function getCreateItemValidationMessage(error: z.ZodError) {
 
     if (field === "state") {
       return "El estado debe tener al menos 2 caracteres.";
+    }
+
+    if (field === "postalCode") {
+      return "El codigo postal debe tener 5 digitos.";
     }
 
     if (field === "category") {

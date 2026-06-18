@@ -5,6 +5,7 @@ import {
   getStateForLocationFilter,
   isLocationInFilter,
 } from "./mexico-locations";
+import { getPostalCodeProximity, normalizePostalCode } from "./postal-code-proximity";
 import {
   currentUser as demoCurrentUser,
   getItem as getDemoItem,
@@ -58,6 +59,7 @@ export type ItemSearchFilters = {
   condition?: string;
   valueRange?: string;
   acceptsOtherCities?: string;
+  postalCode?: string;
   sort?: string;
 };
 
@@ -102,6 +104,7 @@ export async function getItemsResult(filters?: ItemSearchFilters, options: Items
     const condition = filters?.condition?.trim() ?? "";
     const valueRange = filters?.valueRange?.trim() ?? "";
     const acceptsOtherCities = filters?.acceptsOtherCities === "true";
+    const postalCode = normalizePostalCode(filters?.postalCode);
     const items = sortItemsForExplore(demoItems.filter((item) => {
       const matchesQuery =
         !query
@@ -124,7 +127,7 @@ export async function getItemsResult(filters?: ItemSearchFilters, options: Items
         && matchesCondition
         && matchesValueRange
         && matchesOtherCities;
-    }), filters?.sort);
+    }), filters?.sort, postalCode);
 
     return {
       categories: demoCategories,
@@ -202,7 +205,11 @@ export async function getItemsResult(filters?: ItemSearchFilters, options: Items
   const blockedCounterpartyIds = options.includeBlockedOwners
     ? []
     : await getBlockedCounterpartyProfileIdsForCurrentUser(items.map((item) => item.ownerId));
-  const visibleItems = filterItemsByBlockedCounterparties(items, blockedCounterpartyIds);
+  const visibleItems = sortItemsForExplore(
+    filterItemsByBlockedCounterparties(items, blockedCounterpartyIds),
+    filters?.sort,
+    filters?.postalCode,
+  );
   const owners = await getProfilesByIds(visibleItems.map((item) => item.ownerId));
 
   return {
@@ -212,8 +219,25 @@ export async function getItemsResult(filters?: ItemSearchFilters, options: Items
   };
 }
 
-function sortItemsForExplore(items: Item[], sort = "newest") {
+function sortItemsForExplore(items: Item[], sort = "newest", viewerPostalCode?: string) {
+  const postalCode = normalizePostalCode(viewerPostalCode);
+
   return [...items].sort((first, second) => {
+    if (sort === "nearby" && postalCode) {
+      const firstProximity = getPostalCodeProximity(first.postalCode, postalCode);
+      const secondProximity = getPostalCodeProximity(second.postalCode, postalCode);
+
+      if (firstProximity.rank !== secondProximity.rank) {
+        return firstProximity.rank - secondProximity.rank;
+      }
+
+      if (firstProximity.score !== secondProximity.score) {
+        return secondProximity.score - firstProximity.score;
+      }
+
+      return new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime();
+    }
+
     if (sort === "oldest") {
       return new Date(first.createdAt).getTime() - new Date(second.createdAt).getTime();
     }
@@ -1488,6 +1512,7 @@ function toProfile(entry: DataRow): Profile {
     city: getString(entry, "city") || "Guadalajara",
     state: getString(entry, "state") || "Jalisco",
     country: getString(entry, "country") || "México",
+    postalCode: getOptionalString(entry, "postal_code"),
     bio: getOptionalString(entry, "bio"),
     phoneVerified: getBoolean(entry, "phone_verified") && Boolean(getOptionalString(entry, "phone_verified_at")),
     phoneLast4: getOptionalString(entry, "phone_last4"),
@@ -1537,6 +1562,7 @@ function toItem(entry: DataRow): Item {
     city: getString(entry, "city"),
     state: getString(entry, "state"),
     country: getString(entry, "country") || "México",
+    postalCode: getOptionalString(entry, "postal_code"),
     approximateZone: getOptionalString(entry, "approximate_zone"),
     approximateValueRange: getOptionalString(entry, "approximate_value_range") as Item["approximateValueRange"],
     acceptsMultipleItems: getBoolean(entry, "accepts_multiple_items"),

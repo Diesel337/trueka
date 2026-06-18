@@ -49,6 +49,7 @@ export default async function NewItemPage({ searchParams }: NewItemPageProps) {
           categories={categories}
           publicTags={tags}
           privateInterestTags={tags}
+          defaultPostalCode={currentUser.postalCode}
           next={next}
         />
       </section>

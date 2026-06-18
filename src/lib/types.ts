@@ -5,6 +5,7 @@ export type Profile = {
   city: string;
   state: string;
   country: string;
+  postalCode?: string;
   bio?: string;
   phoneVerified: boolean;
   phoneLast4?: string;
@@ -71,6 +72,7 @@ export type Item = {
   city: string;
   state: string;
   country: string;
+  postalCode?: string;
   approximateZone?: string;
   approximateValueRange?: ValueRange;
   acceptsMultipleItems: boolean;

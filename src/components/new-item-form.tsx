@@ -17,11 +17,13 @@ export function NewItemForm({
   categories,
   publicTags,
   privateInterestTags,
+  defaultPostalCode,
   next,
 }: {
   categories: Category[];
   publicTags: Tag[];
   privateInterestTags: Tag[];
+  defaultPostalCode?: string;
   next?: string;
 }) {
   const [state, action, pending] = useActionState(createItemAction, initialActionState);
@@ -200,8 +202,23 @@ export function NewItemForm({
         </label>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-4">
         <LocationSelectFields className="contents" />
+        <label className="grid gap-2">
+          <span className="text-sm font-semibold text-stone-800">Codigo postal</span>
+          <input
+            name="postalCode"
+            defaultValue={defaultPostalCode ?? ""}
+            inputMode="numeric"
+            pattern="[0-9]{5}"
+            maxLength={5}
+            placeholder="Ej. 44100"
+            className="min-h-11 rounded-md border border-stone-200 px-3 outline-none focus:border-emerald-600"
+          />
+          <span className="text-xs leading-5 text-stone-500">
+            Solo ayuda a ordenar cerca; no es direccion.
+          </span>
+        </label>
         <label className="grid gap-2">
           <span className="text-sm font-semibold text-stone-800">Zona aproximada</span>
           <input

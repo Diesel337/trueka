@@ -229,12 +229,27 @@ export function EditItemForm({
         </label>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-4">
         <LocationSelectFields
           defaultState={item.state}
           defaultMunicipality={item.city}
           className="contents"
         />
+        <label className="grid gap-2">
+          <span className="text-sm font-semibold text-stone-800">Codigo postal</span>
+          <input
+            name="postalCode"
+            defaultValue={item.postalCode ?? ""}
+            inputMode="numeric"
+            pattern="[0-9]{5}"
+            maxLength={5}
+            placeholder="Ej. 44100"
+            className="min-h-11 rounded-md border border-stone-200 px-3 outline-none focus:border-emerald-600"
+          />
+          <span className="text-xs leading-5 text-stone-500">
+            Solo ayuda a ordenar cerca; no es direccion.
+          </span>
+        </label>
         <label className="grid gap-2">
           <span className="text-sm font-semibold text-stone-800">Zona aproximada</span>
           <input

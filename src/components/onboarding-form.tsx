@@ -94,6 +94,21 @@ export function OnboardingForm({
           defaultMunicipality={profile.city}
           className="contents"
         />
+        <label className="grid gap-2">
+          <span className="text-sm font-semibold text-stone-800">Codigo postal</span>
+          <input
+            name="postalCode"
+            defaultValue={profile.postalCode ?? ""}
+            inputMode="numeric"
+            pattern="[0-9]{5}"
+            maxLength={5}
+            placeholder="Ej. 44100"
+            className="min-h-11 rounded-md border border-stone-200 px-3 outline-none focus:border-emerald-600"
+          />
+          <span className="text-xs leading-5 text-stone-500">
+            Se usa para ordenar publicaciones cerca de ti; no es direccion.
+          </span>
+        </label>
       </div>
 
       <label className="grid gap-2">

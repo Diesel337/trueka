@@ -13,6 +13,7 @@ import {
   getTradeRequestsForCurrentUser,
 } from "@/lib/data";
 import { getViewerInterestSlugs, hasInterestOverlap } from "@/lib/item-matching";
+import { isNearbyPostalCode } from "@/lib/postal-code-proximity";
 import { calculateMatchScore } from "@/lib/trade-rules";
 import type { Item, Profile, TradeRequest, TradeRequestStatus } from "@/lib/types";
 
@@ -28,16 +29,23 @@ type ItemsPageProps = {
     hasRequest?: string;
     saved?: string;
     verifiedProfile?: string;
+    postalCode?: string;
     sort?: string;
   }>;
 };
 
 export default async function ItemsPage({ searchParams }: ItemsPageProps) {
   const filters = await searchParams;
-  const [{ items: filteredItems, ownersById, categories }, currentProfile] = await Promise.all([
-    getItemsResult(filters),
-    getCurrentProfile(),
-  ]); 
+  const currentProfile = await getCurrentProfile();
+  const typedPostalCode = filters.postalCode?.trim() ? filters.postalCode.trim() : undefined;
+  const selectedSort = filters.sort ?? (typedPostalCode ? "nearby" : "newest");
+  const effectivePostalCode = typedPostalCode ?? (selectedSort === "nearby" ? currentProfile?.postalCode : undefined);
+  const effectiveFilters = {
+    ...filters,
+    postalCode: effectivePostalCode,
+    sort: selectedSort,
+  };
+  const { items: filteredItems, ownersById, categories } = await getItemsResult(effectiveFilters);
   const [tradeRequests, savedItemIds, profileInterestTags] = currentProfile
     ? await Promise.all([
       getTradeRequestsForCurrentUser(),
@@ -56,18 +64,19 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
     ownersById,
     requestMarkersByItemId,
     savedItemIdsSet,
-    filters,
+    effectiveFilters,
   );
   const sortedItems = sortItemsByRequestPriority(signalFilteredItems, requestMarkersByItemId, {
     currentProfile,
-    filters,
+    filters: effectiveFilters,
     ownersById,
     viewerInterestSlugs,
   });
   const matchSignalsByItemId = buildMatchSignalsByItemId(sortedItems, {
     currentProfile,
-    filters,
+    filters: effectiveFilters,
     ownersById,
+    viewerPostalCode: effectivePostalCode,
     viewerInterestSlugs,
   });
 
@@ -82,7 +91,7 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
           </p>
 
           <form className="mt-6 rounded-lg border border-stone-200 bg-white p-3 shadow-sm">
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_180px_220px_220px_48px]">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_180px_220px_150px_220px_48px]">
               <AutoSubmitSearchInput
                 name="q"
                 defaultValue={filters.q}
@@ -98,6 +107,16 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
                 required={false}
                 hideLabels
                 className="contents"
+              />
+              <input
+                name="postalCode"
+                defaultValue={typedPostalCode ?? ""}
+                inputMode="numeric"
+                pattern="[0-9]{5}"
+                maxLength={5}
+                aria-label="Codigo postal"
+                placeholder="CP cerca de ti"
+                className="min-h-11 w-full min-w-0 rounded-md border border-stone-200 px-3 text-sm outline-none focus:border-emerald-600"
               />
               <select
                 name="category"
@@ -122,9 +141,10 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
             <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               <select
                 name="sort"
-                defaultValue={filters.sort ?? "newest"}
+                defaultValue={selectedSort}
                 className="min-h-11 w-full min-w-0 rounded-md border border-stone-200 px-3 text-sm outline-none focus:border-emerald-600"
               >
+                <option value="nearby">Publicaciones cerca de mi</option>
                 <option value="match">Mejor match para mí</option>
                 <option value="newest">Más recientes primero</option>
                 <option value="oldest">Más antiguas primero</option>
@@ -188,6 +208,11 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
                 <option value="true">Correo o teléfono verificado</option>
               </select>
             </div>
+            {selectedSort === "nearby" && !effectivePostalCode ? (
+              <p className="mt-3 text-sm leading-6 text-amber-800">
+                Agrega un codigo postal en el filtro o en tu perfil para ordenar por cercania.
+              </p>
+            ) : null}
           </form>
         </div>
       </section>
@@ -366,9 +391,20 @@ function buildMatchSignalsByItemId(
     currentProfile: Profile | null;
     filters: Awaited<ItemsPageProps["searchParams"]>;
     ownersById: Record<string, Profile>;
+    viewerPostalCode?: string;
     viewerInterestSlugs: string[];
   },
 ) {
+  if (context.filters.sort === "nearby" && context.viewerPostalCode) {
+    return new Map(
+      items.flatMap((item) => (
+        item.ownerId !== context.currentProfile?.id && isNearbyPostalCode(item.postalCode, context.viewerPostalCode)
+          ? [[item.id, "nearby" as const]]
+          : []
+      )),
+    );
+  }
+
   if (context.filters.sort !== "match" || !context.currentProfile) {
     return new Map<string, ItemMatchSignal>();
   }
