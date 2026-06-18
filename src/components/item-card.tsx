@@ -65,35 +65,42 @@ export function ItemCard({
   });
   const isCompactOwnCard = compact && isOwnItem;
   const articleClassName = compact
-    ? "overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm transition hover:border-stone-300 hover:shadow"
+    ? "grid grid-cols-[7.25rem_minmax(0,1fr)] overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm transition hover:border-stone-300 hover:shadow sm:block"
     : "overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md";
-  const imageClassName = compact ? "relative aspect-[16/9] bg-stone-100" : "relative aspect-[4/3] bg-stone-100";
+  const mediaWrapperClassName = compact ? "relative min-h-36 sm:min-h-0" : "relative";
+  const imageLinkClassName = compact ? "block h-full sm:h-auto" : "block";
+  const imageClassName = compact
+    ? "relative h-full min-h-36 bg-stone-100 sm:aspect-[16/9] sm:h-auto sm:min-h-0"
+    : "relative aspect-[4/3] bg-stone-100";
   const imageSizes = compact
     ? "(min-width: 1536px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
     : "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw";
-  const bodyClassName = compact ? "space-y-2.5 p-3" : "space-y-4 p-4";
+  const bodyClassName = compact ? "min-w-0 space-y-2 p-2.5 sm:space-y-2.5 sm:p-3" : "space-y-4 p-4";
   const titleClassName = compact
-    ? "line-clamp-1 text-base font-semibold text-stone-950"
+    ? "line-clamp-2 text-sm font-semibold leading-5 text-stone-950 sm:line-clamp-1 sm:text-base"
     : "line-clamp-2 text-lg font-semibold text-stone-950";
   const descriptionClassName = compact
-    ? "mt-1 line-clamp-1 text-xs leading-5 text-stone-600"
+    ? "mt-1 hidden text-xs leading-5 text-stone-600 sm:line-clamp-1 sm:block"
     : "mt-2 line-clamp-2 text-sm leading-6 text-stone-600";
   const ownerControlButtonClassName = compact
-    ? "inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold transition"
+    ? "inline-flex w-full items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-semibold transition"
     : "inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition";
   const ownerControlIconSize = compact ? 14 : 16;
   const actionButtonClassName = compact
-    ? "inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold transition"
+    ? "inline-flex min-h-9 w-full items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-semibold transition"
     : "inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition";
   const actionIconSize = compact ? 14 : 16;
   const requestMarkerClassName = compact
     ? "mt-2 flex items-start gap-1.5 rounded-md border p-2 text-xs leading-5"
     : "mt-3 flex items-start gap-2 rounded-md border p-3 text-sm leading-5";
+  const categoryBadgeClassName = compact
+    ? "absolute left-2 top-2 max-w-[calc(100%-1rem)] truncate rounded-md bg-white/95 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-900 shadow-sm sm:left-3 sm:top-3 sm:px-2 sm:py-1 sm:text-xs"
+    : "absolute left-3 top-3 rounded-md bg-white/95 px-2 py-1 text-xs font-semibold text-emerald-900 shadow-sm";
 
   return (
     <article className={articleClassName}>
-      <div className="relative">
-        <Link href={`/items/${item.id}`} className="block">
+      <div className={mediaWrapperClassName}>
+        <Link href={`/items/${item.id}`} className={imageLinkClassName}>
           <div className={imageClassName}>
             {primaryPhotoUrl ? (
               <Image
@@ -111,7 +118,7 @@ export function ItemCard({
                 <span className="text-xs">Agrega una foto para publicar.</span>
               </div>
             )}
-            <span className="absolute left-3 top-3 rounded-md bg-white/95 px-2 py-1 text-xs font-semibold text-emerald-900 shadow-sm">
+            <span className={categoryBadgeClassName}>
               {item.category.name}
             </span>
           </div>
@@ -123,18 +130,19 @@ export function ItemCard({
           isSaved={isSaved}
           currentProfile={currentProfile}
           nextPath={`/items/${item.id}`}
+          compact={compact}
         />
       </div>
       <div className={bodyClassName}>
         <div>
           <div
             className={`flex flex-wrap items-center text-stone-600 ${
-              compact ? "mb-1 gap-1.5 text-xs" : "mb-2 gap-2 text-sm"
+              compact ? "mb-1 gap-1 text-[11px] sm:gap-1.5 sm:text-xs" : "mb-2 gap-2 text-sm"
             }`}
           >
-            <span className="inline-flex min-w-0 items-center gap-2">
-              <MapPin aria-hidden="true" size={15} className="shrink-0" />
-              <span>
+            <span className="inline-flex min-w-0 items-center gap-1 sm:gap-2">
+              <MapPin aria-hidden="true" size={compact ? 13 : 15} className="shrink-0" />
+              <span className="truncate">
                 {item.city}, {getMexicoStateDisplayName(item.state)}
               </span>
             </span>
@@ -192,10 +200,10 @@ export function ItemCard({
         {!isCompactOwnCard ? <TrustBadge profile={resolvedOwner} compact={compact} /> : null}
 
         {isOwnItem ? (
-          <div className={compact ? "grid gap-1.5" : "grid gap-2"}>
+          <div className={compact ? "grid grid-cols-2 gap-1.5 sm:grid-cols-1" : "grid gap-2"}>
             <div
               className={`inline-flex items-center justify-center gap-2 rounded-md bg-stone-50 font-semibold text-stone-700 ${
-                compact ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm"
+                compact ? "px-2 py-1.5 text-[11px] sm:text-xs" : "px-4 py-2 text-sm"
               }`}
             >
               <Eye aria-hidden="true" size={ownerControlIconSize} />
@@ -203,7 +211,7 @@ export function ItemCard({
             </div>
             <span
               className={`inline-flex items-center justify-center rounded-md font-semibold ${
-                compact ? "min-h-8 px-2 py-1 text-xs" : "min-h-10 px-3 py-2 text-sm"
+                compact ? "min-h-8 px-2 py-1 text-[11px] sm:text-xs" : "min-h-10 px-3 py-2 text-sm"
               } ${
                 item.status === "active"
                   ? "bg-emerald-50 text-emerald-800"
@@ -219,6 +227,7 @@ export function ItemCard({
                 moderationStatus={item.moderationStatus}
                 hasPhotos={item.photoUrls.length > 0}
                 compact={compact}
+                className={compact ? "col-span-2 sm:col-span-1" : undefined}
               />
             ) : null}
             {showOwnerControls ? (

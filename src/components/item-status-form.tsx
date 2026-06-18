@@ -14,6 +14,7 @@ type ItemStatusFormProps = {
   moderationStatus?: Item["moderationStatus"];
   hasPhotos?: boolean;
   compact?: boolean;
+  className?: string;
 };
 
 export function ItemStatusForm({
@@ -22,6 +23,7 @@ export function ItemStatusForm({
   moderationStatus = "active",
   hasPhotos = true,
   compact = false,
+  className,
 }: ItemStatusFormProps) {
   const router = useRouter();
   const [state, action, pending] = useActionState(updateItemStatusAction, initialActionState);
@@ -42,9 +44,10 @@ export function ItemStatusForm({
   const needsPhotoBeforePublishing = isDraft && !hasPhotos;
   const isWaitingForModeration = isDraft && moderationStatus !== "active";
   const buttonSizeClassName = compact ? "px-3 py-2 text-xs" : "px-4 py-2.5 text-sm";
+  const formClassName = className ? `grid gap-2 ${className}` : "grid gap-2";
 
   return (
-    <form action={action} className="grid gap-2">
+    <form action={action} className={formClassName}>
       <input type="hidden" name="itemId" value={itemId} />
       <input type="hidden" name="status" value={nextStatus} />
       <button

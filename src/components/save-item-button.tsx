@@ -15,6 +15,7 @@ type SaveItemButtonProps = {
   currentProfile?: Profile | null;
   nextPath: string;
   variant?: "floating" | "inline";
+  compact?: boolean;
 };
 
 export function SaveItemButton({
@@ -24,6 +25,7 @@ export function SaveItemButton({
   currentProfile,
   nextPath,
   variant = "floating",
+  compact = false,
 }: SaveItemButtonProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -35,7 +37,8 @@ export function SaveItemButton({
   }
 
   const label = optimisticSaved ? "Quitar de guardados" : "Guardar";
-  const className = getButtonClassName({ isSaved: optimisticSaved, pending, variant });
+  const className = getButtonClassName({ isSaved: optimisticSaved, pending, variant, compact });
+  const iconSize = variant === "inline" ? 17 : compact ? 15 : 18;
 
   if (!currentProfile) {
     return (
@@ -44,7 +47,7 @@ export function SaveItemButton({
         aria-label="Inicia sesión para guardar"
         className={className}
       >
-        <Heart aria-hidden="true" size={variant === "inline" ? 17 : 18} />
+        <Heart aria-hidden="true" size={iconSize} />
         {variant === "inline" ? <span>Guardar</span> : null}
       </Link>
     );
@@ -83,7 +86,7 @@ export function SaveItemButton({
       >
         <Heart
           aria-hidden="true"
-          size={variant === "inline" ? 17 : 18}
+          size={iconSize}
           fill={optimisticSaved ? "currentColor" : "none"}
         />
         {variant === "inline" ? <span>{optimisticSaved ? "Guardado" : "Guardar"}</span> : null}
@@ -115,10 +118,12 @@ function getButtonClassName({
   isSaved,
   pending,
   variant,
+  compact,
 }: {
   isSaved: boolean;
   pending?: boolean;
   variant: NonNullable<SaveItemButtonProps["variant"]>;
+  compact: boolean;
 }) {
   const color = isSaved
     ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
@@ -129,5 +134,7 @@ function getButtonClassName({
     return `inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border px-4 text-sm font-semibold transition ${color} ${pendingClassName}`;
   }
 
-  return `absolute right-3 top-3 z-10 inline-flex size-10 items-center justify-center rounded-full border shadow-sm transition ${color} ${pendingClassName}`;
+  return compact
+    ? `absolute right-2 top-2 z-10 inline-flex size-8 items-center justify-center rounded-full border shadow-sm transition ${color} ${pendingClassName}`
+    : `absolute right-3 top-3 z-10 inline-flex size-10 items-center justify-center rounded-full border shadow-sm transition ${color} ${pendingClassName}`;
 }
