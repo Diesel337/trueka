@@ -42,7 +42,7 @@ export function NewItemForm({
   }, [state.href, state.ok]);
 
   return (
-    <form action={action} className="grid gap-6 rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
+    <form action={action} className="grid gap-6 rounded-lg border border-stone-200 bg-white px-5 pb-28 pt-5 shadow-sm sm:p-5">
       {next ? <input type="hidden" name="next" value={next} /> : null}
       <section className="grid gap-4">
         <div className="flex items-center gap-2 text-sm font-semibold text-stone-800">
@@ -50,11 +50,11 @@ export function NewItemForm({
           Fotos reales
         </div>
         <div className="rounded-lg border border-dashed border-stone-300 bg-stone-50 p-4">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {selectedPhotoNames.map((photoName, index) => (
               <label
                 key={index}
-                className={`grid min-h-28 cursor-pointer place-items-center rounded-md border p-3 text-center transition ${
+                className={`grid min-h-24 cursor-pointer place-items-center rounded-md border p-3 text-center transition ${
                   photoName
                     ? "border-emerald-200 bg-emerald-50"
                     : "border-stone-200 bg-white hover:border-emerald-300"
@@ -326,7 +326,28 @@ export function NewItemForm({
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-3 border-t border-stone-200 pt-5 sm:flex-row sm:justify-end">
+      <div className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-2 gap-3 border-t border-stone-200 bg-white/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_30px_rgba(28,25,23,0.10)] backdrop-blur sm:hidden">
+        <button
+          type="submit"
+          name="intent"
+          value="draft"
+          disabled={!canSaveDraft}
+          className="min-h-12 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-700 hover:bg-stone-50 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-400"
+        >
+          {pending ? "Guardando..." : "Borrador"}
+        </button>
+        <button
+          type="submit"
+          name="intent"
+          value="publish"
+          disabled={!canPublish}
+          className="min-h-12 rounded-md bg-emerald-700 px-3 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600"
+        >
+          {pending ? "Publicando..." : "Publicar"}
+        </button>
+      </div>
+
+      <div className="hidden flex-col gap-3 border-t border-stone-200 pt-5 sm:flex sm:flex-row sm:justify-end">
         <button
           type="submit"
           name="intent"

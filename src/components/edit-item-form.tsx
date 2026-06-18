@@ -55,7 +55,7 @@ export function EditItemForm({
   }, [state.href, state.ok]);
 
   return (
-    <form action={action} className="grid gap-6 rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
+    <form action={action} className="grid gap-6 rounded-lg border border-stone-200 bg-white px-5 pb-28 pt-5 shadow-sm sm:p-5">
       <input type="hidden" name="itemId" value={item.id} />
 
       <section className="grid gap-4">
@@ -66,7 +66,7 @@ export function EditItemForm({
 
         <div className="rounded-lg border border-stone-200 bg-stone-50 p-4">
           <p className="text-sm font-semibold text-stone-800">Fotos actuales</p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
             {item.photoUrls.slice(0, 8).map((photoUrl, index) => (
               <div key={`${photoUrl}-${index}`} className="relative aspect-[4/3] overflow-hidden rounded-md bg-white">
                 <Image
@@ -86,11 +86,11 @@ export function EditItemForm({
         </div>
 
         <div className="rounded-lg border border-dashed border-stone-300 bg-stone-50 p-4">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {selectedPhotoNames.map((photoName, index) => (
               <label
                 key={index}
-                className={`grid min-h-28 cursor-pointer place-items-center rounded-md border p-3 text-center transition ${
+                className={`grid min-h-24 cursor-pointer place-items-center rounded-md border p-3 text-center transition ${
                   photoName
                     ? "border-emerald-200 bg-emerald-50"
                     : "border-stone-200 bg-white hover:border-emerald-300"
@@ -365,7 +365,23 @@ export function EditItemForm({
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-3 border-t border-stone-200 pt-5 sm:flex-row sm:justify-end">
+      <div className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-2 gap-3 border-t border-stone-200 bg-white/95 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_30px_rgba(28,25,23,0.10)] backdrop-blur sm:hidden">
+        <Link
+          href={`/items/${item.id}`}
+          className="inline-flex min-h-12 items-center justify-center rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-700 hover:bg-stone-50"
+        >
+          Cancelar
+        </Link>
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="min-h-12 rounded-md bg-emerald-700 px-3 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600"
+        >
+          {pending ? "Guardando..." : "Guardar"}
+        </button>
+      </div>
+
+      <div className="hidden flex-col gap-3 border-t border-stone-200 pt-5 sm:flex sm:flex-row sm:justify-end">
         <Link
           href={`/items/${item.id}`}
           className="inline-flex items-center justify-center rounded-md border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 hover:bg-stone-50"
