@@ -22,7 +22,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCanonicalMunicipalityName, isValidStateMunicipality } from "@/lib/mexico-locations";
 import { normalizePostalCode } from "@/lib/postal-code-proximity";
 import { canCompleteTradeRequest, canUseTradeRequestChat } from "@/lib/trade-rules";
-import type { Item, ItemStatus, TradeRequestStatus } from "@/lib/types";
+import type { AdminModerationActionName, Item, ItemStatus, TradeRequestStatus } from "@/lib/types";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
 
@@ -99,6 +99,13 @@ const reportSchema = z.object({
     "other",
   ]),
   details: z.string().trim().max(1000).optional(),
+});
+
+const dataDeletionRequestSchema = z.object({
+  email: z.string().trim().email("Escribe el correo de tu cuenta."),
+  provider: z.enum(["email", "google", "facebook", "other"]),
+  details: z.string().trim().max(1000).optional(),
+  acknowledgeManualReview: z.literal("on"),
 });
 
 const blockUserSchema = z.object({
@@ -183,10 +190,15 @@ const adminActionSchema = z.object({
     "resolve_report",
     "dismiss_report",
     "update_report_notes",
+    "review_data_deletion_request",
+    "complete_data_deletion_request",
+    "cancel_data_deletion_request",
+    "update_data_deletion_request_notes",
   ]),
   itemId: z.string().uuid().optional(),
   userId: z.string().uuid().optional(),
   reportId: z.string().uuid().optional(),
+  dataDeletionRequestId: z.string().uuid().optional(),
   adminNotes: z.string().trim().max(1000).optional(),
 });
 
@@ -1953,6 +1965,94 @@ export async function reportContentAction(
   };
 }
 
+export async function requestDataDeletionAction(
+  _previousState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const parsed = dataDeletionRequestSchema.safeParse({
+    email: formData.get("email"),
+    provider: formData.get("provider"),
+    details: optionalFormString(formData.get("details")),
+    acknowledgeManualReview: formData.get("acknowledgeManualReview"),
+  });
+
+  if (!parsed.success) {
+    const mustConfirmManualReview = parsed.error.issues.some((issue) =>
+      issue.path.includes("acknowledgeManualReview"),
+    );
+
+    return {
+      ok: false,
+      message: mustConfirmManualReview
+        ? "Confirma que la solicitud sera revisada manualmente antes de procesarse."
+        : (parsed.error.issues[0]?.message ?? "Revisa los datos de la solicitud."),
+    };
+  }
+
+  if (!hasSupabasePublicConfig()) {
+    return {
+      ok: true,
+      message: "Solicitud registrada en demo local.",
+    };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data: userData } = await supabase.auth.getUser();
+  const userId = userData.user?.id;
+
+  if (!userId) {
+    return {
+      ok: false,
+      message: "Inicia sesion para solicitar eliminacion de datos.",
+    };
+  }
+
+  const { data: existingRequest, error: existingError } = await supabase
+    .from("data_deletion_requests")
+    .select("id,status")
+    .eq("user_id", userId)
+    .in("status", ["open", "reviewing"])
+    .limit(1)
+    .maybeSingle();
+
+  if (existingError) {
+    return {
+      ok: false,
+      message: getDataDeletionRequestErrorMessage(existingError.message) ?? existingError.message,
+    };
+  }
+
+  if (existingRequest) {
+    return {
+      ok: true,
+      message: "Ya tienes una solicitud abierta o en revision. Te avisaremos cuando avance.",
+    };
+  }
+
+  const { error } = await supabase.from("data_deletion_requests").insert({
+    user_id: userId,
+    email: parsed.data.email,
+    provider: parsed.data.provider,
+    details: emptyToNull(parsed.data.details),
+  });
+
+  if (error) {
+    return {
+      ok: false,
+      message: getDataDeletionRequestErrorMessage(error.message) ?? error.message,
+    };
+  }
+
+  revalidatePath("/legal/eliminacion-datos");
+  revalidatePath("/admin");
+  revalidatePath("/", "layout");
+
+  return {
+    ok: true,
+    message: "Solicitud enviada. Te avisaremos cuando sea revisada.",
+  };
+}
+
 export async function blockUserAction(
   _previousState: ActionState,
   formData: FormData,
@@ -2652,6 +2752,7 @@ export async function adminModerationAction(formData: FormData) {
     itemId: formData.get("itemId") || undefined,
     userId: formData.get("userId") || undefined,
     reportId: formData.get("reportId") || undefined,
+    dataDeletionRequestId: formData.get("dataDeletionRequestId") || undefined,
     adminNotes: formData.get("adminNotes") || undefined,
   });
 
@@ -2986,6 +3087,44 @@ export async function adminModerationAction(formData: FormData) {
     }
   }
 
+  if (parsed.data.intent === "update_data_deletion_request_notes" && parsed.data.dataDeletionRequestId) {
+    await supabase
+      .from("data_deletion_requests")
+      .update({ admin_notes: note })
+      .eq("id", parsed.data.dataDeletionRequestId);
+  }
+
+  if (parsed.data.intent === "review_data_deletion_request" && parsed.data.dataDeletionRequestId) {
+    await supabase
+      .from("data_deletion_requests")
+      .update({
+        status: "reviewing",
+        admin_notes: note,
+      })
+      .eq("id", parsed.data.dataDeletionRequestId);
+  }
+
+  if (parsed.data.intent === "complete_data_deletion_request" && parsed.data.dataDeletionRequestId) {
+    await supabase
+      .from("data_deletion_requests")
+      .update({
+        status: "completed",
+        admin_notes: note,
+        completed_at: new Date().toISOString(),
+      })
+      .eq("id", parsed.data.dataDeletionRequestId);
+  }
+
+  if (parsed.data.intent === "cancel_data_deletion_request" && parsed.data.dataDeletionRequestId) {
+    await supabase
+      .from("data_deletion_requests")
+      .update({
+        status: "cancelled",
+        admin_notes: note,
+      })
+      .eq("id", parsed.data.dataDeletionRequestId);
+  }
+
   if (resolvedReport && parsed.data.reportId) {
     await supabase
       .from("reports")
@@ -3001,12 +3140,13 @@ export async function adminModerationAction(formData: FormData) {
   if (parsed.data.userId) {
     revalidatePath(`/users/${parsed.data.userId}`);
   }
+  revalidatePath("/legal/eliminacion-datos");
   revalidatePath("/", "layout");
 }
 
 type AdminModerationActionInput = {
   adminId: string;
-  action: z.infer<typeof adminActionSchema>["intent"];
+  action: AdminModerationActionName;
   reportId?: string;
   targetUserId?: string;
   targetItemId?: string;
@@ -3103,6 +3243,28 @@ function getPostalCodePersistenceErrorMessage(message?: string | null) {
     || normalizedMessage.includes("items_postal_code_format")
   ) {
     return "Falta correr la migracion 0020 de codigo postal en Supabase.";
+  }
+
+  return null;
+}
+
+function getDataDeletionRequestErrorMessage(message?: string | null) {
+  const normalizedMessage = message?.toLocaleLowerCase("es-MX") ?? "";
+
+  if (
+    normalizedMessage.includes("data_deletion_requests_active_user_idx")
+    || normalizedMessage.includes("duplicate key")
+    || normalizedMessage.includes("unique constraint")
+  ) {
+    return "Ya tienes una solicitud abierta o en revision.";
+  }
+
+  if (
+    normalizedMessage.includes("data_deletion_requests")
+    || normalizedMessage.includes("relation")
+    || normalizedMessage.includes("column")
+  ) {
+    return "Falta correr la migracion 0021 de eliminacion de datos en Supabase.";
   }
 
   return null;

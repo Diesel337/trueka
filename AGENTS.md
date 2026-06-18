@@ -16,7 +16,7 @@ Estado actual:
 - MVP de trueques sin pagos, sin dinero en solicitudes, sin envios gestionados y sin mediacion de entregas.
 - Supabase Auth/Postgres/Storage conectado.
 - Google y Facebook login activados; si el email coincide, Supabase une la identidad a la misma cuenta.
-- Perfiles, publicaciones, fotos, solicitudes, chat, contraofertas, favoritos, notificaciones, admin, metricas, zonas Mexico/ZMG, codigo postal opcional para cercania, legal pages y onboarding ya avanzados.
+- Perfiles, publicaciones, fotos, solicitudes, chat, contraofertas, favoritos, notificaciones, admin, metricas, zonas Mexico/ZMG, codigo postal opcional para cercania, legal pages con solicitud de eliminacion de datos y onboarding ya avanzados.
 - Verificacion telefonica real preparada con Supabase Phone Auth/Twilio; el perfil abre una ventana pop up para verificar telefono y arranca con lada +52.
 - Etiquetas visibles de publicacion conectadas a crear/editar, detalle, matching y avisos de interes; etiquetas privadas siguen ocultas.
 - Guardar borrador ya es flujo real; publicar sigue exigiendo foto y mantiene el articulo fuera de Explorar hasta activarlo.
@@ -28,7 +28,7 @@ Estado actual:
 - Publicaciones con señales de prohibidos quedan fuera de Explorar y entran a cola admin para aprobar/rechazar.
 - Anti-spam basico limita solicitudes repetidas al mismo articulo, rafagas de mensajes y reportes duplicados del mismo caso.
 - Las reseñas recibidas aparecen en Mi perfil y generan notificación al usuario calificado.
-- Migraciones recientes importantes: 0010 social profile sync, 0011 onboarding/interests/read tracking, 0012 interest catalog expansion, 0013 phone verification, 0014 public item tags matching, 0015 blocked item visibility, 0016 admin moderation actions, 0017 prohibited item review flow, 0018 basic rate limits, 0019 rating notifications, 0020 postal code proximity.
+- Migraciones recientes importantes: 0010 social profile sync, 0011 onboarding/interests/read tracking, 0012 interest catalog expansion, 0013 phone verification, 0014 public item tags matching, 0015 blocked item visibility, 0016 admin moderation actions, 0017 prohibited item review flow, 0018 basic rate limits, 0019 rating notifications, 0020 postal code proximity, 0021 data deletion requests.
 - Ultimas validaciones conocidas: npm run lint, npm run test y npm run build pasaron.
 
 Reglas centrales:

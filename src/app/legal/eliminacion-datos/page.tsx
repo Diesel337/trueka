@@ -1,8 +1,12 @@
 import Link from "next/link";
 
+import { DataDeletionRequestForm } from "@/components/data-deletion-request-form";
 import { appName, supportEmail } from "@/lib/app-config";
+import { getCurrentProfile } from "@/lib/data";
 
-export default function DataDeletionPage() {
+export default async function DataDeletionPage() {
+  const currentUser = await getCurrentProfile();
+
   return (
     <main className="flex-1 bg-white">
       <section className="border-b border-stone-200 bg-[#fbfaf7]">
@@ -17,7 +21,24 @@ export default function DataDeletionPage() {
 
       <section className="mx-auto grid max-w-4xl gap-7 px-4 py-10 leading-7 text-stone-700 sm:px-6 lg:px-8">
         <Block title="Cómo solicitar eliminación">
-          <ol className="list-decimal space-y-3 pl-5">
+          {currentUser ? (
+            <DataDeletionRequestForm />
+          ) : (
+            <div className="mt-4 rounded-lg border border-stone-200 bg-stone-50 p-4">
+              <p className="text-sm leading-6 text-stone-700">
+                Inicia sesión para levantar una solicitud desde tu cuenta. Si no puedes entrar,
+                usa el correo de soporte de abajo.
+              </p>
+              <Link
+                href={`/auth?next=${encodeURIComponent("/legal/eliminacion-datos")}`}
+                className="mt-3 inline-flex rounded-md bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-800"
+              >
+                Entrar a mi cuenta
+              </Link>
+            </div>
+          )}
+
+          <ol className="mt-5 list-decimal space-y-3 pl-5">
             <li>
               Envía un correo a{" "}
               <a className="font-semibold text-emerald-800 hover:text-emerald-950" href={`mailto:${supportEmail}`}>

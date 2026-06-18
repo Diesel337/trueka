@@ -1,10 +1,11 @@
-import { Ban, CheckCircle2, Clock3, EyeOff, ExternalLink, Flag, History, RotateCcw, Tags, UserCheck, XCircle } from "lucide-react";
+import { Ban, CheckCircle2, Clock3, EyeOff, ExternalLink, Flag, History, RotateCcw, Tags, Trash2, UserCheck, XCircle } from "lucide-react";
 import Link from "next/link";
 
 import { adminModerationAction } from "@/app/actions";
 import { categories, privateInterestTags, prohibitedItemExamples } from "@/lib/constants";
 import {
   getAdminBannedProfiles,
+  getAdminDataDeletionRequests,
   getAdminHiddenItems,
   getAdminItemModerationReviews,
   getAdminModerationActions,
@@ -14,6 +15,8 @@ import {
 } from "@/lib/data";
 import type {
   AdminModerationAction,
+  DataDeletionRequest,
+  DataDeletionRequestStatus,
   Item,
   ItemModerationReview,
   Profile,
@@ -37,6 +40,20 @@ const reportStatusLabels: Record<ReportStatus, string> = {
   reviewing: "En revisión",
   resolved: "Resuelto",
   dismissed: "Descartado",
+};
+
+const dataDeletionRequestStatusLabels: Record<DataDeletionRequestStatus, string> = {
+  open: "Abierta",
+  reviewing: "En revision",
+  completed: "Completada",
+  cancelled: "Cancelada",
+};
+
+const dataDeletionRequestProviderLabels: Record<DataDeletionRequest["provider"], string> = {
+  email: "Correo",
+  google: "Google",
+  facebook: "Facebook",
+  other: "Otro",
 };
 
 const adminActionLabels: Record<AdminModerationAction["action"], string> = {
@@ -96,6 +113,7 @@ export default async function AdminPage() {
   const [
     { items },
     reports,
+    dataDeletionRequests,
     itemModerationReviews,
     hiddenItems,
     bannedProfiles,
@@ -103,6 +121,7 @@ export default async function AdminPage() {
   ] = await Promise.all([
     getItemsResult(undefined, { includeBlockedOwners: true }),
     getAdminReports(),
+    getAdminDataDeletionRequests(),
     getAdminItemModerationReviews(),
     getAdminHiddenItems(),
     getAdminBannedProfiles(),
@@ -110,6 +129,9 @@ export default async function AdminPage() {
   ]);
   const openReportCount = reports.filter((report) =>
     ["open", "reviewing"].includes(report.status),
+  ).length;
+  const openDataDeletionRequestCount = dataDeletionRequests.filter((request) =>
+    ["open", "reviewing"].includes(request.status),
   ).length;
   const activeModerationCount = hiddenItems.length + bannedProfiles.length;
 
@@ -302,6 +324,30 @@ export default async function AdminPage() {
           <section className="rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
+                <Trash2 aria-hidden="true" size={20} className="text-stone-700" />
+                <h2 className="text-xl font-semibold text-stone-950">Eliminacion de datos</h2>
+              </div>
+              <span className="rounded-md bg-stone-100 px-3 py-1 text-sm font-semibold text-stone-700">
+                {openDataDeletionRequestCount} abiertas
+              </span>
+            </div>
+
+            {dataDeletionRequests.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-stone-300 bg-stone-50 p-5 text-sm leading-6 text-stone-600">
+                No hay solicitudes de eliminacion de datos por revisar.
+              </div>
+            ) : (
+              <div className="grid gap-3">
+                {dataDeletionRequests.map((request) => (
+                  <DataDeletionRequestCard key={request.id} request={request} />
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
                 <RotateCcw aria-hidden="true" size={20} className="text-emerald-800" />
                 <h2 className="text-xl font-semibold text-stone-950">Moderación activa</h2>
               </div>
@@ -459,6 +505,95 @@ function ItemModerationReviewCard({ review }: { review: ItemModerationReview }) 
   );
 }
 
+function DataDeletionRequestCard({ request }: { request: DataDeletionRequest }) {
+  return (
+    <article className={`rounded-lg border p-4 ${getDataDeletionRequestCardClass(request.status)}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-stone-950">{request.email}</p>
+          <p className="mt-1 text-sm text-stone-600">
+            {dataDeletionRequestProviderLabels[request.provider]} · {formatReportDate(request.createdAt)}
+          </p>
+          {request.userId ? (
+            <Link
+              href={`/users/${request.userId}`}
+              className="mt-2 inline-flex w-fit items-center gap-1 text-sm font-semibold text-emerald-800 hover:text-emerald-950"
+            >
+              Usuario: {request.userName ?? request.userId}
+              <ExternalLink aria-hidden="true" size={14} />
+            </Link>
+          ) : null}
+        </div>
+        <span className={`rounded-md px-2 py-1 text-xs font-semibold ${getDataDeletionRequestStatusClass(request.status)}`}>
+          {dataDeletionRequestStatusLabels[request.status]}
+        </span>
+      </div>
+
+      {request.details ? (
+        <p className="mt-4 rounded-md bg-white/70 p-3 text-sm leading-6 text-stone-700">
+          {request.details}
+        </p>
+      ) : null}
+
+      {request.completedAt ? (
+        <p className="mt-3 text-xs leading-5 text-stone-500">
+          Completada: {formatReportDate(request.completedAt)}
+        </p>
+      ) : null}
+
+      <form action={adminModerationAction} className="mt-4 grid gap-2 rounded-md border border-stone-200 bg-white/70 p-3">
+        <input type="hidden" name="intent" value="update_data_deletion_request_notes" />
+        <input type="hidden" name="dataDeletionRequestId" value={request.id} />
+        <label className="text-xs font-semibold uppercase text-stone-500">
+          Nota interna legal/admin
+        </label>
+        <textarea
+          name="adminNotes"
+          rows={3}
+          maxLength={1000}
+          defaultValue={request.adminNotes}
+          placeholder="Ej. Se valido identidad, quedan reportes por retener temporalmente..."
+          className="rounded-md border border-stone-200 px-3 py-2 text-sm outline-none focus:border-emerald-600"
+        />
+        <button className="w-fit rounded-md border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50">
+          Guardar nota
+        </button>
+      </form>
+
+      {isActionableDataDeletionRequest(request.status) ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {request.status === "open" ? (
+            <form action={adminModerationAction}>
+              <input type="hidden" name="intent" value="review_data_deletion_request" />
+              <input type="hidden" name="dataDeletionRequestId" value={request.id} />
+              <button className="inline-flex items-center gap-2 rounded-md border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50">
+                <Clock3 aria-hidden="true" size={16} />
+                Revisando
+              </button>
+            </form>
+          ) : null}
+          <form action={adminModerationAction}>
+            <input type="hidden" name="intent" value="complete_data_deletion_request" />
+            <input type="hidden" name="dataDeletionRequestId" value={request.id} />
+            <button className="inline-flex items-center gap-2 rounded-md border border-emerald-200 px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50">
+              <CheckCircle2 aria-hidden="true" size={16} />
+              Completar
+            </button>
+          </form>
+          <form action={adminModerationAction}>
+            <input type="hidden" name="intent" value="cancel_data_deletion_request" />
+            <input type="hidden" name="dataDeletionRequestId" value={request.id} />
+            <button className="inline-flex items-center gap-2 rounded-md border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50">
+              <XCircle aria-hidden="true" size={16} />
+              Cancelar
+            </button>
+          </form>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
 function HiddenItemsPanel({ items }: { items: Item[] }) {
   return (
     <div className="min-w-0">
@@ -573,6 +708,10 @@ function isActionableReport(status: ReportStatus) {
   return status === "open" || status === "reviewing";
 }
 
+function isActionableDataDeletionRequest(status: DataDeletionRequestStatus) {
+  return status === "open" || status === "reviewing";
+}
+
 function getReportCardClass(status: ReportStatus) {
   if (status === "open") {
     return "border-red-200 bg-red-50";
@@ -595,6 +734,38 @@ function getReportStatusClass(status: ReportStatus) {
   }
 
   if (status === "resolved") {
+    return "bg-emerald-100 text-emerald-800";
+  }
+
+  return "bg-stone-200 text-stone-700";
+}
+
+function getDataDeletionRequestCardClass(status: DataDeletionRequestStatus) {
+  if (status === "open") {
+    return "border-red-200 bg-red-50";
+  }
+
+  if (status === "reviewing") {
+    return "border-amber-200 bg-amber-50";
+  }
+
+  if (status === "completed") {
+    return "border-emerald-200 bg-emerald-50";
+  }
+
+  return "border-stone-200 bg-stone-50";
+}
+
+function getDataDeletionRequestStatusClass(status: DataDeletionRequestStatus) {
+  if (status === "open") {
+    return "bg-red-100 text-red-800";
+  }
+
+  if (status === "reviewing") {
+    return "bg-amber-100 text-amber-900";
+  }
+
+  if (status === "completed") {
     return "bg-emerald-100 text-emerald-800";
   }
 

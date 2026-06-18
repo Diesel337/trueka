@@ -197,6 +197,21 @@ export type ReportReason =
 
 export type ReportStatus = "open" | "reviewing" | "resolved" | "dismissed";
 
+export type DataDeletionRequestStatus = "open" | "reviewing" | "completed" | "cancelled";
+
+export type DataDeletionRequest = {
+  id: string;
+  userId?: string;
+  userName?: string;
+  email: string;
+  provider: "email" | "google" | "facebook" | "other";
+  details?: string;
+  status: DataDeletionRequestStatus;
+  adminNotes?: string;
+  completedAt?: string;
+  createdAt: string;
+};
+
 export type AdminModerationActionName =
   | "hide_item"
   | "restore_item"

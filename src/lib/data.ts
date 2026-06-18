@@ -22,6 +22,8 @@ import { createSupabaseServerClient } from "./supabase/server";
 import type {
   Category,
   AdminModerationAction,
+  DataDeletionRequest,
+  DataDeletionRequestStatus,
   Item,
   ItemModerationReview,
   ModerationReport,
@@ -788,6 +790,68 @@ export async function getAdminReports() {
         adminNotes: getOptionalString(report, "admin_notes"),
         status: getString(report, "status") as ReportStatus,
         createdAt: getString(report, "created_at"),
+      };
+    })
+    .sort((first, second) => {
+      const statusDelta = statusOrder[first.status] - statusOrder[second.status];
+
+      if (statusDelta !== 0) {
+        return statusDelta;
+      }
+
+      return new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime();
+    });
+}
+
+export async function getAdminDataDeletionRequests() {
+  if (!hasSupabasePublicConfig()) {
+    return [] as DataDeletionRequest[];
+  }
+
+  const currentProfile = await getCurrentProfile();
+
+  if (!currentProfile?.isAdmin) {
+    return [] as DataDeletionRequest[];
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("data_deletion_requests")
+    .select("id,user_id,email,provider,details,status,admin_notes,completed_at,created_at")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return [] as DataDeletionRequest[];
+  }
+
+  const requestRows = rows(data);
+  const profileIds = requestRows
+    .map((request) => getOptionalString(request, "user_id"))
+    .filter((id): id is string => Boolean(id));
+  const profiles = await getProfilesByIds(profileIds);
+  const profilesById = Object.fromEntries(profiles.map((profile) => [profile.id, profile]));
+  const statusOrder: Record<DataDeletionRequestStatus, number> = {
+    open: 0,
+    reviewing: 1,
+    completed: 2,
+    cancelled: 3,
+  };
+
+  return requestRows
+    .map((request): DataDeletionRequest => {
+      const userId = getOptionalString(request, "user_id");
+
+      return {
+        id: getString(request, "id"),
+        userId,
+        userName: userId ? profilesById[userId]?.displayName : undefined,
+        email: getString(request, "email"),
+        provider: getString(request, "provider") as DataDeletionRequest["provider"],
+        details: getOptionalString(request, "details"),
+        status: getString(request, "status") as DataDeletionRequestStatus,
+        adminNotes: getOptionalString(request, "admin_notes"),
+        completedAt: getOptionalString(request, "completed_at"),
+        createdAt: getString(request, "created_at"),
       };
     })
     .sort((first, second) => {
