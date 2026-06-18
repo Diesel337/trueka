@@ -1104,11 +1104,18 @@ export async function getTradeRequestsForCurrentUser() {
     ...rows(request.trade_counteroffers).map((counteroffer) => getString(counteroffer, "created_by")),
   ]).filter(Boolean);
   const requestIds = requestRows.map((request) => getString(request, "id")).filter(Boolean);
-  const [requestItems, profiles, confirmationsByRequestId, messageSummariesByRequestId] = await Promise.all([
+  const [
+    requestItems,
+    profiles,
+    confirmationsByRequestId,
+    messageSummariesByRequestId,
+    currentUserRatingsByRequestId,
+  ] = await Promise.all([
     getItemsByIds([...requestedItemIds, ...offeredItemIds, ...counterofferItemIds]),
     getProfilesByIds(profileIds),
     getTradeCompletionConfirmationsByRequestIds(requestIds),
     getTradeRequestMessageSummaries(requestIds, profile.id),
+    getCurrentUserRatingsByRequestIds(requestIds, profile.id),
   ]);
   const itemById = Object.fromEntries(requestItems.map((item) => [item.id, item]));
   const profileById = Object.fromEntries(profiles.map((entry) => [entry.id, entry]));
@@ -1152,6 +1159,7 @@ export async function getTradeRequestsForCurrentUser() {
         lastMessageAt: messageSummariesByRequestId[requestId]?.lastMessageAt,
         lastMessagePreview: messageSummariesByRequestId[requestId]?.lastMessagePreview,
         unreadMessageCount: messageSummariesByRequestId[requestId]?.unreadMessageCount ?? 0,
+        currentUserRating: currentUserRatingsByRequestId[requestId] ?? null,
         createdAt: getString(request, "created_at"),
       },
     ];
@@ -1393,6 +1401,33 @@ async function getTradeRequestMessageSummaries(ids: string[], currentUserId: str
 
     return summaries;
   }, {});
+}
+
+async function getCurrentUserRatingsByRequestIds(ids: string[], currentUserId: string) {
+  const uniqueIds = Array.from(new Set(ids)).filter(Boolean);
+
+  if (uniqueIds.length === 0 || !hasSupabasePublicConfig()) {
+    return {} as Record<string, TradeRating>;
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("ratings")
+    .select("trade_request_id,reviewer_id,reviewed_id,rating,comment,item_matched_description,user_was_reliable,created_at")
+    .eq("reviewer_id", currentUserId)
+    .in("trade_request_id", uniqueIds);
+
+  if (error) {
+    return {} as Record<string, TradeRating>;
+  }
+
+  return Object.fromEntries(
+    rows(data).map((rating) => {
+      const tradeRating = toTradeRating(rating);
+
+      return [tradeRating.tradeRequestId, tradeRating];
+    }),
+  );
 }
 
 async function getItemsByIds(ids: string[]) {

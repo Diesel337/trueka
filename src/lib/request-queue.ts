@@ -6,6 +6,7 @@ export type RequestQueueSummary = {
   pendingReceivedCount: number;
   unreadMessageCount: number;
   activeNegotiationsCount: number;
+  pendingRatingCount: number;
   needsAttentionCount: number;
 };
 
@@ -33,6 +34,7 @@ export function getRequestQueueSummary(
   let pendingReceivedCount = 0;
   let unreadMessageCount = 0;
   let activeNegotiationsCount = 0;
+  let pendingRatingCount = 0;
 
   for (const request of requests) {
     const direction = getRequestDirection(request, currentUserId);
@@ -42,6 +44,11 @@ export function getRequestQueueSummary(
 
     if (request.status === "accepted") {
       activeNegotiationsCount += 1;
+    }
+
+    if (needsRating(request)) {
+      pendingRatingCount += 1;
+      uniqueNeedsAttention.add(request.id);
     }
 
     if (direction === "received" && needsReceivedResponse(request)) {
@@ -62,6 +69,7 @@ export function getRequestQueueSummary(
     pendingReceivedCount,
     unreadMessageCount,
     activeNegotiationsCount,
+    pendingRatingCount,
     needsAttentionCount: uniqueNeedsAttention.size,
   };
 }
@@ -86,15 +94,19 @@ export function getTradeRequestQueuePriority(
     return 2;
   }
 
-  if (request.status === "pending" || request.status === "countered") {
+  if (needsRating(request)) {
     return 3;
   }
 
-  if (request.status === "completed") {
+  if (request.status === "pending" || request.status === "countered") {
     return 4;
   }
 
-  return 5;
+  if (request.status === "completed") {
+    return 5;
+  }
+
+  return 6;
 }
 
 function getRequestDirection(request: TradeRequest, currentUserId: string): RequestDirection | null {
@@ -115,6 +127,10 @@ function needsReceivedResponse(request: TradeRequest) {
 
 function needsCounterofferResponse(request: TradeRequest) {
   return request.status === "countered" && hasPendingCounteroffer(request);
+}
+
+function needsRating(request: TradeRequest) {
+  return request.status === "completed" && !request.currentUserRating;
 }
 
 function hasPendingCounteroffer(request: TradeRequest) {

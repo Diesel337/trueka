@@ -1,4 +1,4 @@
-import { Clock3, MapPin, MessageCircle } from "lucide-react";
+import { Clock3, MapPin, MessageCircle, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -38,6 +38,7 @@ export function TradeRequestCard({
   const canOpenChat = canUseTradeRequestChat(request.status);
   const visibleStatus = getVisibleStatus(request, direction);
   const unreadMessageCount = request.unreadMessageCount ?? 0;
+  const needsRating = request.status === "completed" && !request.currentUserRating;
 
   return (
     <article className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
@@ -141,6 +142,13 @@ export function TradeRequestCard({
         </div>
       ) : null}
 
+      {needsRating ? (
+        <div className="mt-3 flex gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-950">
+          <Star aria-hidden="true" size={16} className="mt-0.5 shrink-0" />
+          <p>Falta que califiques a la otra persona para cerrar tu seguimiento.</p>
+        </div>
+      ) : null}
+
       {request.message ? (
         <p className="mt-4 rounded-md bg-stone-50 p-3 text-sm leading-6 text-stone-700">
           {request.message}
@@ -162,11 +170,13 @@ export function TradeRequestCard({
           className="inline-flex items-center justify-center gap-2 rounded-md border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50"
         >
           <MessageCircle aria-hidden="true" size={16} />
-          {canOpenChat
-            ? unreadMessageCount > 0
-              ? `Abrir chat (${unreadMessageCount})`
-              : "Abrir chat"
-            : "Ver solicitud"}
+          {needsRating
+            ? "Calificar"
+            : canOpenChat
+              ? unreadMessageCount > 0
+                ? `Abrir chat (${unreadMessageCount})`
+                : "Abrir chat"
+              : "Ver solicitud"}
         </Link>
       </div>
     </article>
@@ -240,6 +250,10 @@ function getVisibleStatus(request: TradeRequest, direction: "received" | "sent")
 
   if (request.status === "countered" && direction === "received") {
     return "Contraoferta enviada";
+  }
+
+  if (request.status === "completed") {
+    return request.currentUserRating ? "Completada / calificada" : "Completada / falta calificar";
   }
 
   return statusLabels[request.status];

@@ -114,6 +114,7 @@ export type TradeRequest = {
   lastMessageAt?: string;
   lastMessagePreview?: string;
   unreadMessageCount?: number;
+  currentUserRating?: TradeRating | null;
   createdAt: string;
 };
 

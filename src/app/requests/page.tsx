@@ -1,4 +1,4 @@
-import { Bell, Inbox, MessageCircle, Repeat2, Send } from "lucide-react";
+import { Bell, Inbox, MessageCircle, Repeat2, Send, Star } from "lucide-react";
 import Link from "next/link";
 
 import { LiveRefresh } from "@/components/live-refresh";
@@ -42,6 +42,7 @@ export default async function RequestsPage() {
   const queueSummary = getRequestQueueSummary(tradeRequests, currentUser.id);
   const pendingReceivedCount = queueSummary.pendingReceivedCount;
   const unreadMessageCount = queueSummary.unreadMessageCount;
+  const pendingRatingCount = queueSummary.pendingRatingCount;
 
   return (
     <main className="flex-1">
@@ -52,7 +53,7 @@ export default async function RequestsPage() {
           <p className="mt-2 max-w-2xl text-stone-600">
             Revisa ofertas recibidas, da seguimiento a las enviadas y abre el chat cuando una solicitud quede aceptada.
           </p>
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <RequestMetric
               label="Por atender"
               value={queueSummary.needsAttentionCount}
@@ -70,6 +71,12 @@ export default async function RequestsPage() {
               value={queueSummary.activeNegotiationsCount}
               icon="trade"
               tone={queueSummary.activeNegotiationsCount > 0 ? "active" : "neutral"}
+            />
+            <RequestMetric
+              label="Por calificar"
+              value={pendingRatingCount}
+              icon="star"
+              tone={pendingRatingCount > 0 ? "attention" : "neutral"}
             />
           </div>
         </div>
@@ -142,6 +149,11 @@ export default async function RequestsPage() {
                 ].filter(Boolean).join(" · ")
                 : "No tienes solicitudes recibidas ni mensajes pendientes por ahora."}
             </p>
+            {pendingRatingCount > 0 ? (
+              <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-950">
+                Tienes {pendingRatingCount} trueque{pendingRatingCount === 1 ? "" : "s"} completado{pendingRatingCount === 1 ? "" : "s"} por calificar.
+              </p>
+            ) : null}
             {pendingReceivedCount > 0 ? (
               <Link
                 href="#recibidas"
@@ -181,10 +193,16 @@ function RequestMetric({
 }: {
   label: string;
   value: number;
-  icon: "bell" | "message" | "trade";
+  icon: "bell" | "message" | "trade" | "star";
   tone: "attention" | "active" | "neutral";
 }) {
-  const Icon = icon === "message" ? MessageCircle : icon === "trade" ? Repeat2 : Bell;
+  const Icon = icon === "message"
+    ? MessageCircle
+    : icon === "trade"
+      ? Repeat2
+      : icon === "star"
+        ? Star
+        : Bell;
   const toneClassName = {
     attention: "border-amber-200 bg-amber-50 text-amber-950",
     active: "border-emerald-200 bg-emerald-50 text-emerald-950",

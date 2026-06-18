@@ -44,6 +44,27 @@ describe("request queue", () => {
     ]);
   });
 
+  it("keeps completed trades with pending ratings above passive history", () => {
+    const requests = [
+      makeRequest("rated-completed", "completed", {
+        currentUserRating: makeRating("rated-completed"),
+        createdAt: "2026-06-01T12:00:00.000Z",
+      }),
+      makeRequest("pending-rating", "completed", {
+        createdAt: "2026-06-01T09:00:00.000Z",
+      }),
+      makeRequest("waiting", "pending", {
+        createdAt: "2026-06-01T13:00:00.000Z",
+      }),
+    ];
+
+    expect(sortTradeRequestsForQueue(requests, "sent").map((request) => request.id)).toEqual([
+      "pending-rating",
+      "waiting",
+      "rated-completed",
+    ]);
+  });
+
   it("summarizes pending work without double-counting the same request", () => {
     const requests = [
       makeRequest("pending-unread", "pending", { unreadMessageCount: 3 }),
@@ -57,6 +78,24 @@ describe("request queue", () => {
       pendingReceivedCount: 1,
       unreadMessageCount: 3,
       activeNegotiationsCount: 1,
+      pendingRatingCount: 0,
+      needsAttentionCount: 1,
+    });
+  });
+
+  it("counts completed trades that still need a rating", () => {
+    const requests = [
+      makeRequest("pending-rating", "completed"),
+      makeRequest("rated-completed", "completed", {
+        currentUserRating: makeRating("rated-completed"),
+      }),
+    ];
+
+    expect(getRequestQueueSummary(requests, requester.id)).toEqual({
+      pendingReceivedCount: 0,
+      unreadMessageCount: 0,
+      activeNegotiationsCount: 0,
+      pendingRatingCount: 1,
       needsAttentionCount: 1,
     });
   });
@@ -138,5 +177,15 @@ function makeRequest(
     completionConfirmations: [],
     createdAt: "2026-06-01T00:00:00.000Z",
     ...overrides,
+  };
+}
+
+function makeRating(tradeRequestId: string) {
+  return {
+    tradeRequestId,
+    reviewerId: requester.id,
+    reviewedId: receiver.id,
+    rating: 5,
+    createdAt: "2026-06-01T12:00:00.000Z",
   };
 }
