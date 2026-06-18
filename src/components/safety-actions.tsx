@@ -1,7 +1,7 @@
 "use client";
 
-import { Ban, Flag, RotateCcw } from "lucide-react";
-import { useActionState } from "react";
+import { Ban, ChevronDown, Flag, RotateCcw, ShieldAlert } from "lucide-react";
+import { useActionState, type ReactNode } from "react";
 
 import { blockUserAction, reportContentAction, unblockUserAction } from "@/app/actions";
 import { initialActionState } from "@/lib/action-state";
@@ -26,6 +26,38 @@ const reportReasons: { value: ReportReason; label: string }[] = [
   { value: "stolen_item", label: "Posible artículo robado" },
   { value: "other", label: "Otro motivo" },
 ];
+
+export function SafetyActionsPanel({
+  children,
+  title = "Seguridad",
+  description = "Reporta contenido o bloquea a esta persona si algo no se ve bien.",
+}: {
+  children: ReactNode;
+  title?: string;
+  description?: string;
+}) {
+  return (
+    <details className="group overflow-hidden rounded-lg border border-stone-200 bg-white">
+      <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-stone-50 [&::-webkit-details-marker]:hidden">
+        <span className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-stone-800">
+          <ShieldAlert aria-hidden="true" size={17} className="shrink-0 text-amber-700" />
+          <span className="truncate">{title}</span>
+        </span>
+        <ChevronDown
+          aria-hidden="true"
+          size={18}
+          className="shrink-0 text-stone-500 transition group-open:rotate-180"
+        />
+      </summary>
+      <div className="border-t border-stone-200 px-4 py-4">
+        {description ? (
+          <p className="text-sm leading-6 text-stone-600">{description}</p>
+        ) : null}
+        <div className={description ? "mt-3 grid gap-3" : "grid gap-3"}>{children}</div>
+      </div>
+    </details>
+  );
+}
 
 type ReportFormProps = {
   reportedUserId?: string;

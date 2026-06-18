@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { ItemCard } from "@/components/item-card";
 import { ProfileReviewsSection } from "@/components/profile-reviews-section";
-import { BlockUserForm, ReportForm } from "@/components/safety-actions";
+import { BlockUserForm, ReportForm, SafetyActionsPanel } from "@/components/safety-actions";
 import { TrustBadge } from "@/components/trust-badge";
 import { UserAvatar } from "@/components/user-avatar";
 import {
@@ -72,13 +72,18 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
               En Trueka desde {new Date(profile.memberSince).toLocaleDateString("es-MX")}
             </p>
             {!isOwnProfile ? (
-              <div className="mt-5 grid gap-3 border-t border-stone-200 pt-5">
-                <ReportForm
-                  reportedUserId={profile.id}
-                  defaultReason="suspicious_user"
-                  buttonLabel="Reportar usuario"
-                />
-                <BlockUserForm blockedUserId={profile.id} />
+              <div className="mt-5 border-t border-stone-200 pt-5">
+                <SafetyActionsPanel
+                  title="Reportar o bloquear"
+                  description="Usa estas acciones si hay señales sospechosas o prefieres evitar contacto."
+                >
+                  <ReportForm
+                    reportedUserId={profile.id}
+                    defaultReason="suspicious_user"
+                    buttonLabel="Reportar usuario"
+                  />
+                  <BlockUserForm blockedUserId={profile.id} />
+                </SafetyActionsPanel>
               </div>
             ) : null}
           </aside>

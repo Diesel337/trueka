@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import { ItemPhotoGallery } from "@/components/item-photo-gallery";
 import { ItemStatusForm } from "@/components/item-status-form";
 import { RetireItemForm } from "@/components/retire-item-form";
-import { BlockUserForm, ReportForm } from "@/components/safety-actions";
+import { BlockUserForm, ReportForm, SafetyActionsPanel } from "@/components/safety-actions";
 import { SaveItemButton } from "@/components/save-item-button";
 import { ShareItemButton } from "@/components/share-item-button";
 import { TrustBadge } from "@/components/trust-badge";
@@ -245,14 +245,19 @@ export default async function ItemDetailPage({ params }: ItemDetailPageProps) {
             <p className="mt-3 text-xs leading-5 text-stone-500">
               La propuesta se arma con artículos propios. No hay pagos ni envíos gestionados.
             </p>
-            <div className="mt-4 grid gap-3">
-              <ReportForm
-                reportedUserId={owner.id}
-                reportedItemId={item.id}
-                defaultReason="false_information"
-                buttonLabel="Reportar publicación"
-              />
-              {!isOwnItem ? <BlockUserForm blockedUserId={owner.id} /> : null}
+            <div className="mt-4">
+              <SafetyActionsPanel
+                title="Reportar o bloquear"
+                description="Abre estas acciones solo si la publicación parece falsa, prohibida o incómoda."
+              >
+                <ReportForm
+                  reportedUserId={owner.id}
+                  reportedItemId={item.id}
+                  defaultReason="false_information"
+                  buttonLabel="Reportar publicación"
+                />
+                {!isOwnItem ? <BlockUserForm blockedUserId={owner.id} /> : null}
+              </SafetyActionsPanel>
             </div>
           </section>
         </aside>

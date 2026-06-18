@@ -7,7 +7,7 @@ import { CounterofferForm, CounterofferSummary } from "@/components/counteroffer
 import { LiveRefresh } from "@/components/live-refresh";
 import { MarkRequestRead } from "@/components/mark-request-read";
 import { RequestChat } from "@/components/request-chat";
-import { BlockUserForm, ReportForm } from "@/components/safety-actions";
+import { BlockUserForm, ReportForm, SafetyActionsPanel } from "@/components/safety-actions";
 import { TradeRatingForm } from "@/components/trade-rating-form";
 import {
   AcceptTradeRequestForm,
@@ -268,7 +268,10 @@ export default async function RequestDetailPage({ params }: RequestDetailPagePro
             </section>
           )}
 
-          <section className="grid gap-2 rounded-lg border border-stone-200 bg-white p-5">
+          <SafetyActionsPanel
+            title="Reportar o bloquear"
+            description="Mantén estas acciones a la mano si la solicitud se vuelve incómoda o sospechosa."
+          >
             <ReportForm
               reportedUserId={otherUser.id}
               reportedItemId={request.requestedItem.id}
@@ -277,7 +280,7 @@ export default async function RequestDetailPage({ params }: RequestDetailPagePro
               buttonLabel="Reportar solicitud"
             />
             <BlockUserForm blockedUserId={otherUser.id} />
-          </section>
+          </SafetyActionsPanel>
         </aside>
       </section>
     </main>
