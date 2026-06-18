@@ -79,12 +79,13 @@ No se muestra telefono como verificado hasta tener confirmacion real por codigo.
 - Perfil organiza tus publicaciones por estado: activas, borradores, pausadas, en negociacion e intercambiadas.
 - Exploracion con filtros por texto, categoria, estado, municipio/zona, fecha, nombre, verificados y guardados.
 - Solicitudes separadas entre recibidas/enviadas, chat, contraofertas, aceptacion y confirmacion final por ambas personas.
-- Notificaciones con campana, panel, estados de visto/leido y links a la accion correspondiente.
+- Notificaciones con campana, panel, estados de visto/leido, reseñas recibidas y links a la accion correspondiente.
 - Bloqueos gestionables desde Perfil: ver bloqueados y desbloquear sin reabrir historial.
 - Explorar y detalle de publicaciones ocultan usuarios bloqueados en cualquier sentido.
 - Supabase RLS tambien oculta publicaciones, fotos y tags publicos cuando hay bloqueo.
 - Publicaciones con señales de articulos prohibidos quedan en revision antes de aparecer en Explorar.
 - Anti-spam basico limita solicitudes repetidas al mismo articulo, rafagas de mensajes y reportes duplicados.
+- Las reseñas recibidas aparecen en Mi perfil y generan notificación al usuario calificado.
 - Admin para moderacion, reportes, usuarios, publicaciones, reversión de acciones e historial.
 - Legal pages: privacidad, terminos y eliminacion de datos.
 - Regla central intacta: Trueka no maneja pagos, no gestiona envios y no media entregas.
@@ -100,6 +101,7 @@ No se muestra telefono como verificado hasta tener confirmacion real por codigo.
 - `0016_admin_moderation_actions.sql`: historial admin para ocultar/restaurar publicaciones y banear/desbanear usuarios.
 - `0017_prohibited_item_review_flow.sql`: cola admin para aprobar/rechazar publicaciones con señales de prohibidos.
 - `0018_basic_rate_limits.sql`: contadores anti-spam para solicitudes, mensajes y reportes repetitivos.
+- `0019_rating_notifications.sql`: avisa cuando una persona recibe una reseña de un trueque completado.
 
 ## Prompt para continuar en nueva ventana
 
@@ -124,7 +126,8 @@ Estado actual:
 - Admin registra historial de moderacion y permite restaurar publicaciones ocultas o desbanear usuarios.
 - Publicaciones con señales de prohibidos quedan fuera de Explorar y entran a cola admin para aprobar/rechazar.
 - Anti-spam basico limita solicitudes repetidas al mismo articulo, rafagas de mensajes en la misma solicitud y reportes duplicados del mismo caso.
-- Migraciones recientes importantes: 0010 social profile sync, 0011 onboarding/interests/read tracking, 0012 interest catalog expansion, 0013 phone verification, 0014 public item tags matching, 0015 blocked item visibility, 0016 admin moderation actions, 0017 prohibited item review flow, 0018 basic rate limits.
+- Las reseñas recibidas aparecen en Mi perfil y generan notificación al usuario calificado.
+- Migraciones recientes importantes: 0010 social profile sync, 0011 onboarding/interests/read tracking, 0012 interest catalog expansion, 0013 phone verification, 0014 public item tags matching, 0015 blocked item visibility, 0016 admin moderation actions, 0017 prohibited item review flow, 0018 basic rate limits, 0019 rating notifications.
 - Ultimas validaciones conocidas: npm run lint, npm run test y npm run build pasaron.
 
 Reglas centrales:

@@ -9,6 +9,7 @@ import {
   MessageCircle,
   RefreshCcw,
   Sparkles,
+  Star,
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
@@ -226,6 +227,10 @@ function getNotificationIcon(type: NotificationType) {
 
   if (type === "item_view_summary") {
     return Eye;
+  }
+
+  if (type === "rating_received") {
+    return Star;
   }
 
   if (type === "trade_request_received") {

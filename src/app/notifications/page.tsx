@@ -39,7 +39,7 @@ export default async function NotificationsPage() {
           </div>
           <h1 className="mt-2 text-3xl font-semibold text-stone-950">Notificaciones</h1>
           <p className="mt-2 max-w-2xl text-stone-600">
-            Solicitudes, mensajes, matches por interés y avisos de vistas de tus publicaciones.
+            Solicitudes, mensajes, reseñas, matches por interés y avisos de vistas de tus publicaciones.
           </p>
         </div>
       </section>

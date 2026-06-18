@@ -26,7 +26,9 @@ Estado actual:
 - Supabase RLS tambien oculta publicaciones, fotos y tags publicos cuando hay bloqueo en cualquier sentido.
 - Admin registra historial de moderacion y permite restaurar publicaciones ocultas o desbanear usuarios.
 - Publicaciones con señales de prohibidos quedan fuera de Explorar y entran a cola admin para aprobar/rechazar.
-- Migraciones recientes importantes: 0010 social profile sync, 0011 onboarding/interests/read tracking, 0012 interest catalog expansion, 0013 phone verification, 0014 public item tags matching, 0015 blocked item visibility, 0016 admin moderation actions, 0017 prohibited item review flow.
+- Anti-spam basico limita solicitudes repetidas al mismo articulo, rafagas de mensajes y reportes duplicados del mismo caso.
+- Las reseñas recibidas aparecen en Mi perfil y generan notificación al usuario calificado.
+- Migraciones recientes importantes: 0010 social profile sync, 0011 onboarding/interests/read tracking, 0012 interest catalog expansion, 0013 phone verification, 0014 public item tags matching, 0015 blocked item visibility, 0016 admin moderation actions, 0017 prohibited item review flow, 0018 basic rate limits, 0019 rating notifications.
 - Ultimas validaciones conocidas: npm run lint, npm run test y npm run build pasaron.
 
 Reglas centrales:

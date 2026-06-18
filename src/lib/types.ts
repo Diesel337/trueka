@@ -169,7 +169,8 @@ export type NotificationType =
   | "trade_completion_confirmed"
   | "trade_completed"
   | "item_interest_match"
-  | "item_view_summary";
+  | "item_view_summary"
+  | "rating_received";
 
 export type Notification = {
   id: string;
