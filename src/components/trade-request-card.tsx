@@ -39,6 +39,32 @@ export function TradeRequestCard({
   const visibleStatus = getVisibleStatus(request, direction);
   const unreadMessageCount = request.unreadMessageCount ?? 0;
   const needsRating = request.status === "completed" && !request.currentUserRating;
+  const primaryActions = (
+    <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+      {canReceiverRespond ? (
+        <>
+          <AcceptTradeRequestForm tradeRequestId={request.id} />
+          <RejectTradeRequestForm tradeRequestId={request.id} />
+        </>
+      ) : null}
+
+      {canRequesterCancel ? <CancelTradeRequestForm tradeRequestId={request.id} /> : null}
+
+      <Link
+        href={`/requests/${request.id}`}
+        className="inline-flex items-center justify-center gap-2 rounded-md border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50"
+      >
+        <MessageCircle aria-hidden="true" size={16} />
+        {needsRating
+          ? "Calificar"
+          : canOpenChat
+            ? unreadMessageCount > 0
+              ? `Abrir chat (${unreadMessageCount})`
+              : "Abrir chat"
+            : "Ver solicitud"}
+      </Link>
+    </div>
+  );
 
   return (
     <article className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
@@ -96,6 +122,8 @@ export function TradeRequestCard({
           </div>
         </div>
       ) : null}
+
+      {primaryActions}
 
       <div className="mt-4 grid gap-4 border-t border-stone-100 pt-4 md:grid-cols-[0.8fr_1.2fr]">
         <ItemPhotoSummary label="Artículo solicitado" item={request.requestedItem} />
@@ -155,30 +183,6 @@ export function TradeRequestCard({
         </p>
       ) : null}
 
-      <div className="mt-4 grid gap-2 md:grid-cols-2 lg:grid-cols-3">
-        {canReceiverRespond ? (
-          <>
-            <AcceptTradeRequestForm tradeRequestId={request.id} />
-            <RejectTradeRequestForm tradeRequestId={request.id} />
-          </>
-        ) : null}
-
-        {canRequesterCancel ? <CancelTradeRequestForm tradeRequestId={request.id} /> : null}
-
-        <Link
-          href={`/requests/${request.id}`}
-          className="inline-flex items-center justify-center gap-2 rounded-md border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50"
-        >
-          <MessageCircle aria-hidden="true" size={16} />
-          {needsRating
-            ? "Calificar"
-            : canOpenChat
-              ? unreadMessageCount > 0
-                ? `Abrir chat (${unreadMessageCount})`
-                : "Abrir chat"
-              : "Ver solicitud"}
-        </Link>
-      </div>
     </article>
   );
 }

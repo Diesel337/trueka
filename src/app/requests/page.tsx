@@ -53,7 +53,7 @@ export default async function RequestsPage() {
           <p className="mt-2 max-w-2xl text-stone-600">
             Revisa ofertas recibidas, da seguimiento a las enviadas y abre el chat cuando una solicitud quede aceptada.
           </p>
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
             <RequestMetric
               label="Por atender"
               value={queueSummary.needsAttentionCount}
@@ -79,6 +79,13 @@ export default async function RequestsPage() {
               tone={pendingRatingCount > 0 ? "attention" : "neutral"}
             />
           </div>
+          <nav
+            aria-label="Atajos de solicitudes"
+            className="mt-4 flex gap-2 overflow-x-auto pb-1"
+          >
+            <RequestShortcut href="#recibidas" label="Recibidas" value={received.length} icon="inbox" />
+            <RequestShortcut href="#enviadas" label="Enviadas" value={sent.length} icon="send" />
+          </nav>
         </div>
       </section>
 
@@ -210,13 +217,40 @@ function RequestMetric({
   }[tone];
 
   return (
-    <div className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-3 ${toneClassName}`}>
+    <div className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-3 sm:gap-3 sm:px-4 ${toneClassName}`}>
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium">{label}</p>
-        <p className="mt-1 text-2xl font-semibold text-stone-950">{value.toLocaleString("es-MX")}</p>
+        <p className="truncate text-xs font-medium sm:text-sm">{label}</p>
+        <p className="mt-1 text-xl font-semibold text-stone-950 sm:text-2xl">{value.toLocaleString("es-MX")}</p>
       </div>
-      <Icon aria-hidden="true" size={20} className="shrink-0" />
+      <Icon aria-hidden="true" size={18} className="shrink-0 sm:size-5" />
     </div>
+  );
+}
+
+function RequestShortcut({
+  href,
+  label,
+  value,
+  icon,
+}: {
+  href: string;
+  label: string;
+  value: number;
+  icon: "inbox" | "send";
+}) {
+  const Icon = icon === "inbox" ? Inbox : Send;
+
+  return (
+    <Link
+      href={href}
+      className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-md border border-stone-200 bg-white px-3 text-sm font-semibold text-stone-700 hover:border-emerald-200 hover:text-emerald-800"
+    >
+      <Icon aria-hidden="true" size={16} />
+      {label}
+      <span className="rounded bg-stone-100 px-1.5 py-0.5 text-xs text-stone-600">
+        {value.toLocaleString("es-MX")}
+      </span>
+    </Link>
   );
 }
 
