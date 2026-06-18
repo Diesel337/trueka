@@ -15,7 +15,7 @@ export function NavigationLinks({ links }: { links: NavigationLink[] }) {
     .sort((first, second) => second.href.length - first.href.length)[0]?.href;
 
   return (
-    <div className="hidden items-center gap-1 md:flex">
+    <div className="hidden items-center gap-1 lg:flex">
       {links.map((link) => {
         const isActive = activeHref === link.href;
 
