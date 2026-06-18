@@ -1,4 +1,4 @@
-import { Clock3, MapPin, MessageCircle, Repeat2, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Clock3, MapPin, MessageCircle, Repeat2, ShieldCheck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -15,6 +15,7 @@ import {
   CompleteTradeRequestForm,
   RejectTradeRequestForm,
 } from "@/components/trade-request-status-form";
+import { UserAvatar } from "@/components/user-avatar";
 import { conditionLabels } from "@/lib/constants";
 import {
   getCurrentProfile,
@@ -182,6 +183,9 @@ export default async function RequestDetailPage({ params }: RequestDetailPagePro
           ) : null}
 
           <section className="rounded-lg border border-stone-200 bg-white p-5">
+            {request.status === "accepted" || request.status === "completed" ? (
+              <CompletionProgressPanel request={request} currentUserId={currentUser.id} />
+            ) : null}
             {request.status === "accepted" ? (
               <>
                 <CompleteTradeRequestForm
@@ -337,6 +341,65 @@ function TradeExchangeItem({
         </p>
       </div>
     </article>
+  );
+}
+
+function CompletionProgressPanel({
+  request,
+  currentUserId,
+}: {
+  request: TradeRequest;
+  currentUserId: string;
+}) {
+  const confirmationsByUserId = new Map(
+    request.completionConfirmations.map((confirmation) => [confirmation.userId, confirmation]),
+  );
+  const participants = [request.requester, request.receiver];
+
+  return (
+    <div className="mb-4 rounded-md border border-stone-200 bg-stone-50 p-3">
+      <div className="flex items-center gap-2 text-sm font-semibold text-stone-950">
+        <ShieldCheck aria-hidden="true" size={16} className="text-emerald-700" />
+        Confirmación del intercambio
+      </div>
+      <p className="mt-2 text-xs leading-5 text-stone-600">
+        Solo se cierra cuando ambas personas marcan que sí se hizo.
+      </p>
+      <div className="mt-3 grid gap-2">
+        {participants.map((participant) => {
+          const confirmation = confirmationsByUserId.get(participant.id);
+          const isConfirmed = Boolean(confirmation) || request.status === "completed";
+
+          return (
+            <div
+              key={participant.id}
+              className="flex items-center justify-between gap-3 rounded-md bg-white px-3 py-2"
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                <UserAvatar src={participant.avatarUrl} alt={participant.displayName} size={32} />
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-stone-950">
+                    {participant.id === currentUserId ? "Tú" : participant.displayName}
+                  </p>
+                  <p className="text-xs text-stone-500">
+                    {isConfirmed
+                      ? confirmation
+                        ? `Confirmó el ${new Date(confirmation.confirmedAt).toLocaleDateString("es-MX")}`
+                        : "Confirmado"
+                      : "Pendiente de confirmar"}
+                  </p>
+                </div>
+              </div>
+              {isConfirmed ? (
+                <CheckCircle2 aria-hidden="true" size={18} className="shrink-0 text-emerald-700" />
+              ) : (
+                <Clock3 aria-hidden="true" size={18} className="shrink-0 text-stone-400" />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
