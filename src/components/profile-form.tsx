@@ -115,11 +115,11 @@ export function ProfileForm({
           <p className="mt-1 text-sm leading-6 text-stone-600">
             Privado; solo se usa para ordenar matches y avisos.
           </p>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-3">
             {tags.map((tag) => (
               <label
                 key={tag.slug}
-                className="flex min-h-10 items-center gap-2 rounded-md border border-stone-200 px-3 text-sm text-stone-700 hover:bg-stone-50"
+                className="flex min-h-10 items-center gap-2 rounded-md border border-stone-200 px-2 text-sm text-stone-700 hover:bg-stone-50 sm:px-3"
               >
                 <input
                   name="privateInterestTags"
@@ -142,7 +142,7 @@ export function ProfileForm({
       <div className="md:col-span-2">
         <button
           disabled={pending}
-          className="rounded-md bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-800"
+          className="min-h-11 w-full rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white hover:bg-emerald-800 sm:w-auto"
         >
           {pending ? "Guardando..." : "Guardar perfil"}
         </button>

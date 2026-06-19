@@ -41,7 +41,7 @@ export function OnboardingForm({
   }, [avatarPreviewUrl]);
 
   return (
-    <form action={action} className="grid gap-5">
+    <form action={action} className="grid gap-5 pb-20 sm:pb-0">
       <input type="hidden" name="next" value={next} />
 
       <label className="grid gap-3 rounded-lg border border-stone-200 bg-stone-50 p-4 sm:grid-cols-[88px_1fr]">
@@ -129,11 +129,11 @@ export function OnboardingForm({
         <p className="mt-1 text-sm leading-6 text-stone-600">
           Esto queda privado y ayuda a ordenar matches.
         </p>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-4 grid grid-cols-2 gap-2 lg:grid-cols-3">
           {tags.map((tag) => (
             <label
               key={tag.slug}
-              className="flex min-h-10 items-center gap-2 rounded-md border border-stone-200 px-3 text-sm text-stone-700 hover:bg-stone-50"
+              className="flex min-h-10 items-center gap-2 rounded-md border border-stone-200 px-2 text-sm text-stone-700 hover:bg-stone-50 sm:px-3"
             >
               <input
                 name="privateInterestTags"
@@ -156,7 +156,7 @@ export function OnboardingForm({
 
       <button
         disabled={pending}
-        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white hover:bg-emerald-800 disabled:bg-stone-300 disabled:text-stone-600"
+        className="fixed inset-x-4 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(28,25,23,0.18)] hover:bg-emerald-800 disabled:bg-stone-300 disabled:text-stone-600 sm:static sm:shadow-none"
       >
         <CheckCircle2 aria-hidden="true" size={18} />
         {pending ? "Guardando..." : "Entrar a Trueka"}
