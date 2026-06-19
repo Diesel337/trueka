@@ -42,14 +42,14 @@ export async function Navigation() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-stone-200 bg-[#fbfaf7]/95 backdrop-blur">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-6 lg:px-8">
         <Link href="/" className="flex min-w-0 shrink-0 items-center gap-3">
           <Image
             src="/trueka-logo.png"
             alt="Trueka"
             width={150}
             height={46}
-            className="h-9 w-auto mix-blend-multiply sm:h-10"
+            className="h-8 w-auto mix-blend-multiply sm:h-10"
             priority
           />
           {currentProfile ? (
