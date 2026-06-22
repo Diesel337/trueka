@@ -9,7 +9,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useRef, type ReactNode } from "react";
 
 import { signOutAction } from "@/app/actions";
@@ -34,6 +34,8 @@ export function MobileNavigationMenu({
   unreadNotificationCount,
 }: MobileNavigationMenuProps) {
   const pathname = usePathname() ?? "/";
+  const searchParams = useSearchParams();
+  const isSavedItemsView = pathname === "/items" && searchParams.get("saved") === "true";
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const closeMenu = () => {
     if (detailsRef.current) {
@@ -66,7 +68,7 @@ export function MobileNavigationMenu({
           icon: <ShieldCheck aria-hidden="true" size={17} />,
         },
       ];
-  const currentLabel = getCurrentSectionLabel(pathname, menuLinks);
+  const currentLabel = getCurrentSectionLabel(pathname, menuLinks, isSavedItemsView);
 
   return (
     <div className="ml-auto flex min-w-0 items-center gap-2 lg:hidden">
@@ -114,7 +116,7 @@ export function MobileNavigationMenu({
                 href={link.href}
                 label={link.label}
                 icon={link.icon}
-                isActive={isActiveNavigationPath(pathname, link.href)}
+                isActive={isActiveNavigationPath(pathname, link.href, isSavedItemsView)}
                 onSelect={closeMenu}
               />
             ))}
@@ -177,7 +179,15 @@ function MobileMenuLink({
   );
 }
 
-function getCurrentSectionLabel(pathname: string, links: MobileMenuEntry[]) {
+function getCurrentSectionLabel(
+  pathname: string,
+  links: MobileMenuEntry[],
+  isSavedItemsView: boolean,
+) {
+  if (isSavedItemsView) {
+    return links.find((link) => link.href === "/items?saved=true")?.label ?? "Guardados";
+  }
+
   const candidates = [{ href: "/", label: "Inicio" }, ...links].filter(
     (link) => !link.href.includes("?"),
   );
@@ -188,7 +198,15 @@ function getCurrentSectionLabel(pathname: string, links: MobileMenuEntry[]) {
   return activeLink?.label ?? "Trueka";
 }
 
-function isActiveNavigationPath(pathname: string, href: string) {
+function isActiveNavigationPath(pathname: string, href: string, isSavedItemsView = false) {
+  if (href === "/items?saved=true") {
+    return isSavedItemsView;
+  }
+
+  if (href === "/items" && isSavedItemsView) {
+    return false;
+  }
+
   if (href.includes("?")) {
     return false;
   }

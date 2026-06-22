@@ -1,6 +1,7 @@
 import { Heart, LogOut, ShieldCheck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { signOutAction } from "@/app/actions";
 import {
@@ -88,11 +89,13 @@ export async function Navigation() {
                 </button>
               </form>
             </div>
-            <MobileNavigationMenu
-              links={links}
-              currentProfile={currentProfile}
-              unreadNotificationCount={unreadNotificationCount}
-            />
+            <Suspense fallback={<MobileNavigationMenuFallback unreadNotificationCount={unreadNotificationCount} />}>
+              <MobileNavigationMenu
+                links={links}
+                currentProfile={currentProfile}
+                unreadNotificationCount={unreadNotificationCount}
+              />
+            </Suspense>
           </>
         ) : (
           <>
@@ -103,14 +106,38 @@ export async function Navigation() {
               <ShieldCheck aria-hidden="true" size={16} />
               Entrar
             </Link>
-            <MobileNavigationMenu
-              links={links}
-              currentProfile={null}
-              unreadNotificationCount={0}
-            />
+            <Suspense fallback={<MobileNavigationMenuFallback unreadNotificationCount={0} />}>
+              <MobileNavigationMenu
+                links={links}
+                currentProfile={null}
+                unreadNotificationCount={0}
+              />
+            </Suspense>
           </>
         )}
       </nav>
     </header>
+  );
+}
+
+function MobileNavigationMenuFallback({
+  unreadNotificationCount,
+}: {
+  unreadNotificationCount: number;
+}) {
+  return (
+    <div className="ml-auto flex min-w-0 items-center gap-2 lg:hidden">
+      <span className="min-w-0 max-w-[6.75rem] truncate rounded-md bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-900 ring-1 ring-emerald-100 sm:max-w-[12rem]">
+        Trueka
+      </span>
+      <span className="relative inline-flex min-h-10 items-center gap-2 rounded-md border border-emerald-700 px-3 text-sm font-semibold text-emerald-800">
+        Menú
+        {unreadNotificationCount > 0 ? (
+          <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-emerald-700 px-1.5 py-0.5 text-center text-[11px] font-bold leading-none text-white">
+            {unreadNotificationCount > 9 ? "9+" : unreadNotificationCount}
+          </span>
+        ) : null}
+      </span>
+    </div>
   );
 }
