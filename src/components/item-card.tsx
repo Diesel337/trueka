@@ -65,22 +65,22 @@ export function ItemCard({
   });
   const isCompactOwnCard = compact && isOwnItem;
   const articleClassName = compact
-    ? "grid grid-cols-[7.25rem_minmax(0,1fr)] overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm transition hover:border-stone-300 hover:shadow sm:block"
+    ? "grid grid-cols-[6.75rem_minmax(0,1fr)] overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm transition hover:border-stone-300 hover:shadow sm:grid-cols-[8.5rem_minmax(0,1fr)]"
     : "overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md";
-  const mediaWrapperClassName = compact ? "relative min-h-36 sm:min-h-0" : "relative";
-  const imageLinkClassName = compact ? "block h-full sm:h-auto" : "block";
+  const mediaWrapperClassName = compact ? "relative min-h-32" : "relative";
+  const imageLinkClassName = compact ? "block h-full" : "block";
   const imageClassName = compact
-    ? "relative h-full min-h-36 bg-stone-100 sm:aspect-[16/9] sm:h-auto sm:min-h-0"
+    ? "relative h-full min-h-32 bg-stone-100"
     : "relative aspect-[4/3] bg-stone-100";
   const imageSizes = compact
-    ? "(min-width: 1536px) 20vw, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+    ? "(min-width: 640px) 136px, 108px"
     : "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw";
-  const bodyClassName = compact ? "min-w-0 space-y-2 p-2.5 sm:space-y-2.5 sm:p-3" : "space-y-4 p-4";
+  const bodyClassName = compact ? "min-w-0 space-y-2 p-2.5" : "space-y-4 p-4";
   const titleClassName = compact
-    ? "line-clamp-2 text-sm font-semibold leading-5 text-stone-950 sm:line-clamp-1 sm:text-base"
+    ? "line-clamp-2 text-sm font-semibold leading-5 text-stone-950"
     : "line-clamp-2 text-lg font-semibold text-stone-950";
   const descriptionClassName = compact
-    ? "mt-1 hidden text-xs leading-5 text-stone-600 sm:line-clamp-1 sm:block"
+    ? "hidden"
     : "mt-2 line-clamp-2 text-sm leading-6 text-stone-600";
   const ownerControlButtonClassName = compact
     ? "inline-flex w-full items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-semibold transition"
@@ -94,7 +94,7 @@ export function ItemCard({
     ? "mt-2 flex items-start gap-1.5 rounded-md border p-2 text-xs leading-5"
     : "mt-3 flex items-start gap-2 rounded-md border p-3 text-sm leading-5";
   const categoryBadgeClassName = compact
-    ? "absolute left-2 top-2 max-w-[calc(100%-1rem)] truncate rounded-md bg-white/95 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-900 shadow-sm sm:left-3 sm:top-3 sm:px-2 sm:py-1 sm:text-xs"
+    ? "absolute left-2 top-2 max-w-[calc(100%-1rem)] truncate rounded-md bg-white/95 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-900 shadow-sm"
     : "absolute left-3 top-3 rounded-md bg-white/95 px-2 py-1 text-xs font-semibold text-emerald-900 shadow-sm";
 
   return (

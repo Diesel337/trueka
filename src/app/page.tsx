@@ -28,7 +28,7 @@ export default async function Home() {
   ]);
   const savedItemIds = currentProfile ? await getSavedItemIdsForCurrentUser() : [];
   const savedItemIdsSet = new Set(savedItemIds);
-  const featuredItems = items.slice(0, 3);
+  const featuredItems = items.slice(0, 4);
 
   return (
     <main className="flex-1">
@@ -36,14 +36,15 @@ export default async function Home() {
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_420px] lg:px-8 lg:py-14">
           <div className="flex min-h-[520px] flex-col justify-center">
             <p className="mb-3 text-sm font-semibold uppercase text-emerald-800">
-              ZMG de inicio
+              Primero Guadalajara y alrededores
             </p>
             <h1 className="max-w-3xl text-4xl font-semibold leading-tight text-stone-950 sm:text-5xl">
               Lo que tienes por lo que quieres.
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-stone-700">
-              Lo quieres, pero no quieres gastar? Publica artículos con fotos reales, recibe
-              propuestas y decide con calma. Trueka no maneja pagos, envíos ni entregas.
+              ¿Lo quieres, pero no quieres gastar? Publica artículos con fotos y descripciones
+              reales, recibe propuestas y decide con calma. Aceptar una solicitud abre la
+              negociación; Trueka no maneja pagos, envíos ni entregas.
             </p>
 
             <form action="/items" className="mt-8 grid gap-3 rounded-lg bg-white p-3 shadow-sm sm:grid-cols-[1fr_180px_220px_48px]">
@@ -101,21 +102,28 @@ export default async function Home() {
                 </div>
               </div>
               <p className="mt-4 text-sm leading-6 text-stone-700">
-                Aceptar una solicitud abre la negociación. El trueque solo cuenta como completado
-                cuando ambas personas confirman que se hizo el intercambio.
+                La propuesta se arma con artículos propios por artículos de otra persona. Sin
+                efectivo, pagos, ajustes de dinero ni envíos gestionados.
               </p>
             </div>
             <div className="rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
               <p className="text-sm font-semibold text-stone-950">Cómo funciona</p>
               <div className="mt-4 grid gap-3 text-sm leading-6 text-stone-700">
                 <p>
-                  <span className="font-semibold text-stone-950">1. Publica</span> artículos con fotos reales y detalles claros.
+                  <span className="font-semibold text-stone-950">1. Publica</span> con fotos,
+                  descripción real y defectos claros. Los detalles evitan sorpresas.
                 </p>
                 <p>
-                  <span className="font-semibold text-stone-950">2. Envía o recibe</span> propuestas con artículos de otras personas.
+                  <span className="font-semibold text-stone-950">2. Envía o recibe</span>{" "}
+                  propuestas: artículo por artículo, o varios artículos por varios artículos.
                 </p>
                 <p>
-                  <span className="font-semibold text-stone-950">3. Confirma</span> el intercambio solo si ambas personas lo realizaron.
+                  <span className="font-semibold text-stone-950">3. Acepta</span> una solicitud
+                  para abrir la negociación y acordar detalles con calma.
+                </p>
+                <p>
+                  <span className="font-semibold text-stone-950">4. Confirmen ambos</span> cuando
+                  el intercambio ya ocurrió y deja una reseña útil.
                 </p>
               </div>
             </div>
@@ -128,14 +136,14 @@ export default async function Home() {
           <div>
             <h2 className="text-2xl font-semibold text-stone-950">Publicaciones recientes</h2>
             <p className="mt-2 text-stone-600">
-              Artículos activos con descripción real y detalles conocidos.
+              Artículos activos con descripción real, defectos claros y detalles conocidos.
             </p>
           </div>
           <Link href="/items" className="text-sm font-semibold text-emerald-800 hover:text-emerald-950">
             Ver todo
           </Link>
         </div>
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {featuredItems.map((item) => (
             <ItemCard
               key={item.id}
@@ -151,7 +159,10 @@ export default async function Home() {
 
       <section className="border-t border-stone-200 bg-white">
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-semibold text-stone-950">Categorías iniciales</h2>
+          <h2 className="text-2xl font-semibold text-stone-950">Categorías sugeridas</h2>
+          <p className="mt-2 text-sm text-stone-600">
+            Empieza por una categoría y descubre publicaciones activas.
+          </p>
           <div className="mt-5 flex flex-wrap gap-2">
             {categories.map((category) => (
               <Link
