@@ -32,9 +32,11 @@ export function AuthForm({ next = "/items" }: { next?: string }) {
       <input type="hidden" name="next" value={next} />
       <label className="grid gap-2">
         <span className="text-sm font-semibold text-stone-800">Correo</span>
-        <div className="grid grid-cols-[40px_1fr] rounded-md border border-stone-200 focus-within:border-emerald-600">
-          <span className="grid place-items-center text-stone-500">
-            <Mail aria-hidden="true" size={17} />
+        <div className="grid grid-cols-[48px_1fr] rounded-md border border-stone-200 bg-white focus-within:border-emerald-600 focus-within:ring-2 focus-within:ring-emerald-100">
+          <span className="grid place-items-center">
+            <span className="grid size-8 place-items-center rounded-md bg-emerald-50 text-emerald-800">
+              <Mail aria-hidden="true" size={17} strokeWidth={2.2} />
+            </span>
           </span>
           <input
             name="email"

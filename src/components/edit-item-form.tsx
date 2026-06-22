@@ -236,7 +236,9 @@ export function EditItemForm({
           className="contents"
         />
         <label className="grid gap-2">
-          <span className="text-sm font-semibold text-stone-800">Codigo postal</span>
+          <span className="text-sm font-semibold text-stone-800">
+            Código postal <span className="font-normal text-stone-500">(solo cercanía)</span>
+          </span>
           <input
             name="postalCode"
             defaultValue={item.postalCode ?? ""}
@@ -246,9 +248,6 @@ export function EditItemForm({
             placeholder="Ej. 44100"
             className="min-h-11 rounded-md border border-stone-200 px-3 outline-none focus:border-emerald-600"
           />
-          <span className="text-xs leading-5 text-stone-500">
-            Solo ayuda a ordenar cerca; no es direccion.
-          </span>
         </label>
         <label className="grid gap-2">
           <span className="text-sm font-semibold text-stone-800">Zona aproximada</span>
@@ -310,7 +309,7 @@ export function EditItemForm({
         <div className="rounded-lg border border-stone-200 p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-800">
             <Tags aria-hidden="true" size={16} />
-            Etiquetas visibles
+            Etiquetas de mi artículo
           </div>
           <div className="grid gap-2 sm:grid-cols-3">
             {publicTags.map((tag) => (
@@ -328,15 +327,15 @@ export function EditItemForm({
           </div>
           <p className="mt-3 flex gap-2 text-sm leading-6 text-stone-500">
             <Info aria-hidden="true" size={16} className="mt-1 shrink-0" />
-            Se muestran en la publicación y ayudan a que otras personas encuentren tu artículo.
-            Usa hasta 6.
+            Se muestran en tu publicación para que otras personas entiendan qué ofreces y te
+            encuentren mejor. Usa hasta 6.
           </p>
         </div>
 
         <div className="rounded-lg border border-stone-200 p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-stone-800">
             <LockKeyhole aria-hidden="true" size={16} />
-            Etiquetas privadas para matching
+            Etiquetas ocultas para matching
           </div>
           <div className="grid gap-2 sm:grid-cols-3">
             {privateInterestTags.map((tag) => (
@@ -354,7 +353,8 @@ export function EditItemForm({
           </div>
           <p className="mt-3 flex gap-2 text-sm leading-6 text-stone-500">
             <Info aria-hidden="true" size={16} className="mt-1 shrink-0" />
-            Estas etiquetas ayudan al matching, pero no se muestran completas públicamente.
+            No se muestran en tu publicación. Ayudan a Trueka a detectar qué buscas y sugerir
+            mejores coincidencias.
           </p>
         </div>
       </section>

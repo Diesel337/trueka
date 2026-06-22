@@ -24,6 +24,10 @@ const userLinks: NavigationLink[] = [
   { href: "/items/new", label: "Publicar" },
   { href: "/items/manage", label: "Mis publicaciones" },
   { href: "/requests", label: "Solicitudes" },
+];
+
+const mobileUserLinks: NavigationLink[] = [
+  ...userLinks,
   { href: "/profile", label: "Perfil" },
 ];
 
@@ -39,6 +43,11 @@ export async function Navigation() {
     ? currentProfile.isAdmin
       ? [...userLinks, { href: "/admin", label: "Admin" }]
       : userLinks
+    : guestLinks;
+  const mobileLinks = currentProfile
+    ? currentProfile.isAdmin
+      ? [...mobileUserLinks, { href: "/admin", label: "Admin" }]
+      : mobileUserLinks
     : guestLinks;
 
   return (
@@ -91,7 +100,7 @@ export async function Navigation() {
             </div>
             <Suspense fallback={<MobileNavigationMenuFallback unreadNotificationCount={unreadNotificationCount} />}>
               <MobileNavigationMenu
-                links={links}
+                links={mobileLinks}
                 currentProfile={currentProfile}
                 unreadNotificationCount={unreadNotificationCount}
               />

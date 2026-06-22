@@ -43,8 +43,8 @@ export default async function Home() {
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-stone-700">
               ¿Lo quieres, pero no quieres gastar? Publica artículos con fotos y descripciones
-              reales, recibe propuestas y decide con calma. Aceptar una solicitud abre la
-              negociación; Trueka no maneja pagos, envíos ni entregas.
+              reales, recibe propuestas y decide con calma. Trueka es intercambio de artículos:
+              sin efectivo, pagos ni envíos gestionados.
             </p>
 
             <form action="/items" className="mt-8 grid gap-3 rounded-lg bg-white p-3 shadow-sm sm:grid-cols-[1fr_180px_220px_48px]">
@@ -102,8 +102,7 @@ export default async function Home() {
                 </div>
               </div>
               <p className="mt-4 text-sm leading-6 text-stone-700">
-                La propuesta se arma con artículos propios por artículos de otra persona. Sin
-                efectivo, pagos, ajustes de dinero ni envíos gestionados.
+                Sin efectivo, pagos, ajustes de dinero ni envíos gestionados.
               </p>
             </div>
             <div className="rounded-lg border border-stone-200 bg-white p-5 shadow-sm">

@@ -24,8 +24,8 @@ export default async function AuthPage({ searchParams }: AuthPageProps) {
           Entra para publicar y proponer trueques.
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-8 text-stone-600">
-          El MVP usa correo verificado como señal de confianza. KYC formal y verificación
-          telefónica quedan fuera de fase 1.
+          Usa Google, Facebook o correo para publicar artículos, guardar favoritos y proponer
+          trueques con calma.
         </p>
       </section>
 
