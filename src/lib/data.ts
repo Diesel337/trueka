@@ -586,7 +586,7 @@ export async function getProfileReviews(profileId: string, limit = 6) {
   const { data, error } = await supabase
     .from("ratings")
     .select(
-      "id,trade_request_id,reviewer_id,rating,comment,item_matched_description,user_was_reliable,created_at,reviewer:profiles!ratings_reviewer_id_fkey(id,display_name,avatar_url)",
+      "id,trade_request_id,reviewer_id,rating,item_description_rating,communication_rating,fair_exchange_rating,reliability_rating,review_tags,comment,item_matched_description,user_was_reliable,created_at,reviewer:profiles!ratings_reviewer_id_fkey(id,display_name,avatar_url)",
     )
     .eq("reviewed_id", profileId)
     .order("created_at", { ascending: false })
@@ -1320,7 +1320,7 @@ export async function getCurrentUserRatingForRequest(requestId: string) {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("ratings")
-    .select("trade_request_id,reviewer_id,reviewed_id,rating,comment,item_matched_description,user_was_reliable,created_at")
+    .select("trade_request_id,reviewer_id,reviewed_id,rating,item_description_rating,communication_rating,fair_exchange_rating,reliability_rating,review_tags,comment,item_matched_description,user_was_reliable,created_at")
     .eq("trade_request_id", requestId)
     .eq("reviewer_id", userId)
     .maybeSingle();
@@ -1501,7 +1501,7 @@ async function getCurrentUserRatingsByRequestIds(ids: string[], currentUserId: s
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("ratings")
-    .select("trade_request_id,reviewer_id,reviewed_id,rating,comment,item_matched_description,user_was_reliable,created_at")
+    .select("trade_request_id,reviewer_id,reviewed_id,rating,item_description_rating,communication_rating,fair_exchange_rating,reliability_rating,review_tags,comment,item_matched_description,user_was_reliable,created_at")
     .eq("reviewer_id", currentUserId)
     .in("trade_request_id", uniqueIds);
 
@@ -1714,6 +1714,11 @@ function toTradeRating(entry: DataRow): TradeRating {
     reviewerId: getString(entry, "reviewer_id"),
     reviewedId: getString(entry, "reviewed_id"),
     rating: getNumber(entry, "rating", 0),
+    itemDescriptionRating: getOptionalNumber(entry, "item_description_rating"),
+    communicationRating: getOptionalNumber(entry, "communication_rating"),
+    fairExchangeRating: getOptionalNumber(entry, "fair_exchange_rating"),
+    reliabilityRating: getOptionalNumber(entry, "reliability_rating"),
+    reviewTags: getStringArray(entry, "review_tags"),
     comment: getOptionalString(entry, "comment"),
     itemMatchedDescription: getBoolean(entry, "item_matched_description"),
     userWasReliable: getBoolean(entry, "user_was_reliable"),
@@ -1731,6 +1736,11 @@ function toProfileReview(entry: DataRow): ProfileReview {
     reviewerName: getString(reviewer, "display_name") || "Usuario Trueka",
     reviewerAvatarUrl: getOptionalString(reviewer, "avatar_url"),
     rating: getNumber(entry, "rating", 0),
+    itemDescriptionRating: getOptionalNumber(entry, "item_description_rating"),
+    communicationRating: getOptionalNumber(entry, "communication_rating"),
+    fairExchangeRating: getOptionalNumber(entry, "fair_exchange_rating"),
+    reliabilityRating: getOptionalNumber(entry, "reliability_rating"),
+    reviewTags: getStringArray(entry, "review_tags"),
     comment: getOptionalString(entry, "comment"),
     itemMatchedDescription: getBoolean(entry, "item_matched_description"),
     userWasReliable: getBoolean(entry, "user_was_reliable"),
@@ -1830,6 +1840,32 @@ function getNumber(entry: DataRow, key: string, fallback: number) {
   }
 
   return fallback;
+}
+
+function getOptionalNumber(entry: DataRow, key: string) {
+  const value = entry[key];
+
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  return undefined;
+}
+
+function getStringArray(entry: DataRow, key: string) {
+  const value = entry[key];
+
+  if (!Array.isArray(value)) {
+    return [] as string[];
+  }
+
+  return value.filter((item): item is string => typeof item === "string");
 }
 
 function formatTime(value: string) {

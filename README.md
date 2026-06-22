@@ -86,7 +86,7 @@ No se muestra telefono como verificado hasta tener confirmacion real por codigo.
 - Supabase RLS tambien oculta publicaciones, fotos y tags publicos cuando hay bloqueo.
 - Publicaciones con señales de articulos prohibidos quedan en revision antes de aparecer en Explorar.
 - Anti-spam basico limita solicitudes repetidas al mismo articulo, rafagas de mensajes y reportes duplicados.
-- Las reseñas recibidas aparecen en Mi perfil y generan notificación al usuario calificado.
+- Las reseñas recibidas aparecen en Mi perfil, guardan criterios separados, señales positivas predeterminadas y generan notificación al usuario calificado.
 - Admin para moderacion, reportes, usuarios, publicaciones, reversión de acciones e historial.
 - Legal pages: privacidad, terminos, eliminacion de datos y solicitud real con seguimiento admin.
 - Regla central intacta: Trueka no maneja pagos, no gestiona envios y no media entregas.
@@ -105,6 +105,7 @@ No se muestra telefono como verificado hasta tener confirmacion real por codigo.
 - `0019_rating_notifications.sql`: avisa cuando una persona recibe una reseña de un trueque completado.
 - `0020_postal_code_proximity.sql`: codigo postal opcional para ordenar publicaciones cercanas sin manejar direcciones, envios ni entregas.
 - `0021_data_deletion_requests.sql`: solicitudes de eliminacion de datos con revision manual desde admin.
+- `0022_rating_criteria_and_review_tags.sql`: reseñas por criterios, promedio y etiquetas positivas predeterminadas.
 
 ## Prompt para continuar en nueva ventana
 
@@ -129,8 +130,8 @@ Estado actual:
 - Admin registra historial de moderacion y permite restaurar publicaciones ocultas o desbanear usuarios.
 - Publicaciones con señales de prohibidos quedan fuera de Explorar y entran a cola admin para aprobar/rechazar.
 - Anti-spam basico limita solicitudes repetidas al mismo articulo, rafagas de mensajes en la misma solicitud y reportes duplicados del mismo caso.
-- Las reseñas recibidas aparecen en Mi perfil y generan notificación al usuario calificado.
-- Migraciones recientes importantes: 0010 social profile sync, 0011 onboarding/interests/read tracking, 0012 interest catalog expansion, 0013 phone verification, 0014 public item tags matching, 0015 blocked item visibility, 0016 admin moderation actions, 0017 prohibited item review flow, 0018 basic rate limits, 0019 rating notifications, 0020 postal code proximity, 0021 data deletion requests.
+- Las reseñas recibidas aparecen en Mi perfil, guardan criterios separados, señales positivas predeterminadas y generan notificación al usuario calificado.
+- Migraciones recientes importantes: 0010 social profile sync, 0011 onboarding/interests/read tracking, 0012 interest catalog expansion, 0013 phone verification, 0014 public item tags matching, 0015 blocked item visibility, 0016 admin moderation actions, 0017 prohibited item review flow, 0018 basic rate limits, 0019 rating notifications, 0020 postal code proximity, 0021 data deletion requests, 0022 rating criteria/review tags.
 - Ultimas validaciones conocidas: npm run lint, npm run test y npm run build pasaron.
 
 Reglas centrales:

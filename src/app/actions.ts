@@ -17,6 +17,7 @@ import {
   getRateLimitRpcArgs,
   type RateLimitRuleKey,
 } from "@/lib/rate-limits";
+import { reviewTagSlugs } from "@/lib/review-tags";
 import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCanonicalMunicipalityName, isValidStateMunicipality } from "@/lib/mexico-locations";
@@ -148,10 +149,12 @@ const respondCounterofferSchema = z.object({
 const tradeRatingSchema = z.object({
   tradeRequestId: z.string().uuid(),
   reviewedUserId: z.string().uuid(),
-  rating: z.coerce.number().int().min(1).max(5),
+  itemDescriptionRating: z.coerce.number().int().min(1).max(5),
+  communicationRating: z.coerce.number().int().min(1).max(5),
+  fairExchangeRating: z.coerce.number().int().min(1).max(5),
+  reliabilityRating: z.coerce.number().int().min(1).max(5),
+  reviewTags: z.array(z.enum(reviewTagSlugs)).max(6),
   comment: z.string().trim().max(600).optional(),
-  itemMatchedDescription: z.boolean(),
-  userWasReliable: z.boolean(),
 });
 
 const profileSchema = z.object({
@@ -2185,18 +2188,27 @@ export async function rateTradeRequestAction(
   const parsed = tradeRatingSchema.safeParse({
     tradeRequestId: formData.get("tradeRequestId"),
     reviewedUserId: formData.get("reviewedUserId"),
-    rating: formData.get("rating"),
+    itemDescriptionRating: formData.get("itemDescriptionRating"),
+    communicationRating: formData.get("communicationRating"),
+    fairExchangeRating: formData.get("fairExchangeRating"),
+    reliabilityRating: formData.get("reliabilityRating"),
+    reviewTags: formData.getAll("reviewTags").map(String),
     comment: optionalFormString(formData.get("comment")),
-    itemMatchedDescription: formData.has("itemMatchedDescription"),
-    userWasReliable: formData.has("userWasReliable"),
   });
 
   if (!parsed.success) {
     return {
       ok: false,
-      message: "Elige una calificación de 1 a 5.",
+      message: "Elige una calificación de 1 a 5 en cada criterio.",
     };
   }
+
+  const overallRating = Math.round((
+    parsed.data.itemDescriptionRating
+    + parsed.data.communicationRating
+    + parsed.data.fairExchangeRating
+    + parsed.data.reliabilityRating
+  ) / 4);
 
   if (!hasSupabasePublicConfig()) {
     return {
@@ -2273,10 +2285,15 @@ export async function rateTradeRequestAction(
     trade_request_id: parsed.data.tradeRequestId,
     reviewer_id: userId,
     reviewed_id: parsed.data.reviewedUserId,
-    rating: parsed.data.rating,
+    rating: overallRating,
     comment: emptyToNull(parsed.data.comment),
-    item_matched_description: parsed.data.itemMatchedDescription,
-    user_was_reliable: parsed.data.userWasReliable,
+    item_matched_description: parsed.data.itemDescriptionRating >= 4,
+    user_was_reliable: parsed.data.reliabilityRating >= 4,
+    item_description_rating: parsed.data.itemDescriptionRating,
+    communication_rating: parsed.data.communicationRating,
+    fair_exchange_rating: parsed.data.fairExchangeRating,
+    reliability_rating: parsed.data.reliabilityRating,
+    review_tags: parsed.data.reviewTags,
   });
 
   if (error) {

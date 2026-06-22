@@ -143,6 +143,11 @@ export type TradeRating = {
   reviewerId: string;
   reviewedId: string;
   rating: number;
+  itemDescriptionRating?: number;
+  communicationRating?: number;
+  fairExchangeRating?: number;
+  reliabilityRating?: number;
+  reviewTags: string[];
   comment?: string;
   itemMatchedDescription?: boolean;
   userWasReliable?: boolean;
@@ -156,6 +161,11 @@ export type ProfileReview = {
   reviewerName: string;
   reviewerAvatarUrl?: string;
   rating: number;
+  itemDescriptionRating?: number;
+  communicationRating?: number;
+  fairExchangeRating?: number;
+  reliabilityRating?: number;
+  reviewTags: string[];
   comment?: string;
   itemMatchedDescription?: boolean;
   userWasReliable?: boolean;

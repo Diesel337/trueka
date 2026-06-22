@@ -186,6 +186,11 @@ function makeRating(tradeRequestId: string) {
     reviewerId: requester.id,
     reviewedId: receiver.id,
     rating: 5,
+    itemDescriptionRating: 5,
+    communicationRating: 5,
+    fairExchangeRating: 5,
+    reliabilityRating: 5,
+    reviewTags: ["recomendado"],
     createdAt: "2026-06-01T12:00:00.000Z",
   };
 }
