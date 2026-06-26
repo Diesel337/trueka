@@ -67,6 +67,8 @@ El checklist para publicar Trueka y configurar Supabase, Google y Facebook vive 
 El checklist para preparar trafico, readiness y prueba de humo vive en
 `PRODUCTION_READINESS.md`.
 
+La guia para monitoreo, logs e incidentes vive en `OPERATIONS.md`.
+
 ## Verificacion telefonica
 
 El flujo base para telefono verificado con Supabase Phone Auth vive en `PHONE_VERIFICATION.md`.
@@ -90,6 +92,7 @@ No se muestra telefono como verificado hasta tener confirmacion real por codigo.
 - Publicaciones con señales de articulos prohibidos quedan en revision antes de aparecer en Explorar.
 - Anti-spam basico limita solicitudes repetidas al mismo articulo, rafagas de mensajes y reportes duplicados.
 - Preparacion inicial para trafico: indices de rutas calientes, `/api/ready` y prueba smoke ligera.
+- Operacion basica: pantallas de error/404, logs estructurados y guia de incidentes.
 - Las reseñas recibidas aparecen en Mi perfil, guardan criterios separados, señales positivas predeterminadas y generan notificación al usuario calificado.
 - Admin para moderacion, reportes, usuarios, publicaciones, reversión de acciones e historial.
 - Legal pages: privacidad, terminos, eliminacion de datos y solicitud real con seguimiento admin.
@@ -137,6 +140,7 @@ Estado actual:
 - Publicaciones con señales de prohibidos quedan fuera de Explorar y entran a cola admin para aprobar/rechazar.
 - Anti-spam basico limita solicitudes repetidas al mismo articulo, rafagas de mensajes en la misma solicitud y reportes duplicados del mismo caso.
 - Preparacion inicial para trafico: indices de rutas calientes, `/api/ready` y prueba smoke ligera.
+- Operacion basica: pantallas de error/404, logs estructurados y guia de incidentes.
 - Las reseñas recibidas aparecen en Mi perfil, guardan criterios separados, señales positivas predeterminadas y generan notificación al usuario calificado.
 - Migraciones recientes importantes: 0010 social profile sync, 0011 onboarding/interests/read tracking, 0012 interest catalog expansion, 0013 phone verification, 0014 public item tags matching, 0015 blocked item visibility, 0016 admin moderation actions, 0017 prohibited item review flow, 0018 basic rate limits, 0019 rating notifications, 0020 postal code proximity, 0021 data deletion requests, 0022 rating criteria/review tags, 0023 production readiness indexes.
 - Ultimas validaciones conocidas: npm run lint, npm run test y npm run build pasaron.

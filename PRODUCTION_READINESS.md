@@ -25,6 +25,8 @@ Abre:
 
 En Railway, el healthcheck puede seguir usando `/api/health`. Si `/api/ready` falla, la app puede prender pero no esta lista para usuarios reales.
 
+Para respuesta a incidentes, alertas y revision diaria usa `OPERATIONS.md`.
+
 ## Prueba de humo con trafico ligero
 
 Antes de una publicacion fuerte, corre una medicion corta contra la URL publica:
