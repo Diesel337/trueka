@@ -64,6 +64,9 @@ npm run build
 El checklist para publicar Trueka y configurar Supabase, Google y Facebook vive en
 `DEPLOYMENT.md`.
 
+El checklist para preparar trafico, readiness y prueba de humo vive en
+`PRODUCTION_READINESS.md`.
+
 ## Verificacion telefonica
 
 El flujo base para telefono verificado con Supabase Phone Auth vive en `PHONE_VERIFICATION.md`.
@@ -86,6 +89,7 @@ No se muestra telefono como verificado hasta tener confirmacion real por codigo.
 - Supabase RLS tambien oculta publicaciones, fotos y tags publicos cuando hay bloqueo.
 - Publicaciones con señales de articulos prohibidos quedan en revision antes de aparecer en Explorar.
 - Anti-spam basico limita solicitudes repetidas al mismo articulo, rafagas de mensajes y reportes duplicados.
+- Preparacion inicial para trafico: indices de rutas calientes, `/api/ready` y prueba smoke ligera.
 - Las reseñas recibidas aparecen en Mi perfil, guardan criterios separados, señales positivas predeterminadas y generan notificación al usuario calificado.
 - Admin para moderacion, reportes, usuarios, publicaciones, reversión de acciones e historial.
 - Legal pages: privacidad, terminos, eliminacion de datos y solicitud real con seguimiento admin.
@@ -106,6 +110,8 @@ No se muestra telefono como verificado hasta tener confirmacion real por codigo.
 - `0020_postal_code_proximity.sql`: codigo postal opcional para ordenar publicaciones cercanas sin manejar direcciones, envios ni entregas.
 - `0021_data_deletion_requests.sql`: solicitudes de eliminacion de datos con revision manual desde admin.
 - `0022_rating_criteria_and_review_tags.sql`: reseñas por criterios, promedio y etiquetas positivas predeterminadas.
+
+- `0023_production_readiness_indexes.sql`: indices para busqueda, publicaciones, solicitudes, chat, notificaciones, resenas y colas admin.
 
 ## Prompt para continuar en nueva ventana
 
@@ -130,8 +136,9 @@ Estado actual:
 - Admin registra historial de moderacion y permite restaurar publicaciones ocultas o desbanear usuarios.
 - Publicaciones con señales de prohibidos quedan fuera de Explorar y entran a cola admin para aprobar/rechazar.
 - Anti-spam basico limita solicitudes repetidas al mismo articulo, rafagas de mensajes en la misma solicitud y reportes duplicados del mismo caso.
+- Preparacion inicial para trafico: indices de rutas calientes, `/api/ready` y prueba smoke ligera.
 - Las reseñas recibidas aparecen en Mi perfil, guardan criterios separados, señales positivas predeterminadas y generan notificación al usuario calificado.
-- Migraciones recientes importantes: 0010 social profile sync, 0011 onboarding/interests/read tracking, 0012 interest catalog expansion, 0013 phone verification, 0014 public item tags matching, 0015 blocked item visibility, 0016 admin moderation actions, 0017 prohibited item review flow, 0018 basic rate limits, 0019 rating notifications, 0020 postal code proximity, 0021 data deletion requests, 0022 rating criteria/review tags.
+- Migraciones recientes importantes: 0010 social profile sync, 0011 onboarding/interests/read tracking, 0012 interest catalog expansion, 0013 phone verification, 0014 public item tags matching, 0015 blocked item visibility, 0016 admin moderation actions, 0017 prohibited item review flow, 0018 basic rate limits, 0019 rating notifications, 0020 postal code proximity, 0021 data deletion requests, 0022 rating criteria/review tags, 0023 production readiness indexes.
 - Ultimas validaciones conocidas: npm run lint, npm run test y npm run build pasaron.
 
 Reglas centrales:

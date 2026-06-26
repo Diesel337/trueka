@@ -4,7 +4,7 @@ Checklist para pasar de `localhost` a una URL publica.
 
 ## 1. Antes de publicar
 
-- Corre todas las migraciones de Supabase hasta `0018_basic_rate_limits.sql`.
+- Corre todas las migraciones de Supabase hasta `0023_production_readiness_indexes.sql`.
 - Confirma que existen los buckets de Storage `item-photos` y `profile-avatars`.
 - Confirma que Email, Google y Facebook estan activos en Supabase Auth.
 - Mantener la regla central: Trueka no maneja pagos, no gestiona envios y no media entregas.
@@ -37,6 +37,7 @@ Trueka puede publicarse en Railway como app Next.js conectada a Supabase.
 
 El proyecto ya usa `output: "standalone"` y `npm run start` ejecuta el servidor standalone que Railway usa en produccion.
 El healthcheck configurado apunta a `/api/health`.
+Usa `/api/ready` despues del deploy para confirmar que la app tambien puede consultar Supabase.
 
 ## 4. URLs importantes de Trueka
 
@@ -47,6 +48,7 @@ Cuando tengas dominio, estas URLs ya seran publicas:
 - Eliminacion de datos: `https://TU-DOMINIO/legal/eliminacion-datos`
 - Callback de la app: `https://TU-DOMINIO/auth/callback`
 - Health check para Railway: `https://TU-DOMINIO/api/health`
+- Readiness check con Supabase: `https://TU-DOMINIO/api/ready`
 
 ## 5. Supabase Auth
 
@@ -96,6 +98,8 @@ Mientras la app este en modo prueba, solo admins, developers, testers o usuarios
 6. Proponer trueque desde otra cuenta.
 7. Aceptar solicitud, mandar chat y confirmar intercambio desde ambas cuentas.
 8. Revisar que no exista ningun flujo de pago, envio gestionado o entrega mediada por Trueka.
+9. Abrir `https://TU-DOMINIO/api/ready` y confirmar que `ok` sea `true`.
+10. Para medir una carga ligera, usar `PRODUCTION_READINESS.md`.
 
 ## 9. Verificacion tecnica
 
