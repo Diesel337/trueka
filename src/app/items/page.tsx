@@ -1,4 +1,5 @@
 import { Search, SlidersHorizontal } from "lucide-react";
+import Link from "next/link";
 
 import { AutoSubmitSearchInput } from "@/components/auto-submit-search-input";
 import { ItemCard, type ItemMatchSignal, type ItemRequestMarker } from "@/components/item-card";
@@ -31,6 +32,7 @@ type ItemsPageProps = {
     verifiedProfile?: string;
     postalCode?: string;
     sort?: string;
+    page?: string;
   }>;
 };
 
@@ -47,7 +49,17 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
     postalCode: effectivePostalCode,
     sort: selectedSort,
   };
-  const { items: filteredItems, ownersById, categories } = await getItemsResult(effectiveFilters);
+  const requestedPage = Number.parseInt(filters.page ?? "1", 10);
+  const {
+    items: filteredItems,
+    ownersById,
+    categories,
+    page,
+    hasMore,
+  } = await getItemsResult(effectiveFilters, {
+    page: Number.isFinite(requestedPage) ? requestedPage : 1,
+    pageSize: 24,
+  });
   const [tradeRequests, savedItemIds, profileInterestTags] = currentProfile
     ? await Promise.all([
       getTradeRequestsForCurrentUser(),
@@ -265,9 +277,54 @@ export default async function ItemsPage({ searchParams }: ItemsPageProps) {
             </p>
           </div>
         )}
+        {page > 1 || hasMore ? (
+          <nav
+            aria-label="Paginacion de publicaciones"
+            className="mt-8 flex items-center justify-center gap-3"
+          >
+            {page > 1 ? (
+              <Link
+                href={getItemsPageHref(filters, page - 1)}
+                className="inline-flex min-h-11 items-center rounded-md border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 hover:bg-stone-50"
+              >
+                Anterior
+              </Link>
+            ) : null}
+            <span className="text-sm font-medium text-stone-600">Pagina {page}</span>
+            {hasMore ? (
+              <Link
+                href={getItemsPageHref(filters, page + 1)}
+                className="inline-flex min-h-11 items-center rounded-md bg-emerald-700 px-4 text-sm font-semibold text-white hover:bg-emerald-800"
+              >
+                Siguiente
+              </Link>
+            ) : null}
+          </nav>
+        ) : null}
       </section>
     </main>
   );
+}
+
+function getItemsPageHref(
+  filters: Awaited<ItemsPageProps["searchParams"]>,
+  page: number,
+) {
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(filters)) {
+    if (value && key !== "page") {
+      params.set(key, value);
+    }
+  }
+
+  if (page > 1) {
+    params.set("page", String(page));
+  }
+
+  const query = params.toString();
+
+  return query ? `/items?${query}` : "/items";
 }
 
 function getActiveAdvancedFilterCount(

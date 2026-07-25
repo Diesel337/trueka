@@ -23,12 +23,15 @@ export const metadata: Metadata = {
 
 export default async function Home() {
   const [{ items, ownersById, categories }, currentProfile] = await Promise.all([
-    getItemsResult({ state: "Jalisco", city: guadalajaraMetroLocationValue }),
+    getItemsResult(
+      { state: "Jalisco", city: guadalajaraMetroLocationValue },
+      { pageSize: 4 },
+    ),
     getCurrentProfile(),
   ]);
   const savedItemIds = currentProfile ? await getSavedItemIdsForCurrentUser() : [];
   const savedItemIdsSet = new Set(savedItemIds);
-  const featuredItems = items.slice(0, 4);
+  const featuredItems = items;
 
   return (
     <main className="flex-1">

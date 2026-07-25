@@ -1,12 +1,18 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getPublicPostalCodeArea,
   getPostalCodeProximity,
   isNearbyPostalCode,
   normalizePostalCode,
 } from "./postal-code-proximity";
 
 describe("postal code proximity", () => {
+  it("stores only an approximate public postal area for items", () => {
+    expect(getPublicPostalCodeArea("44123")).toBe("44100");
+    expect(getPublicPostalCodeArea("invalid")).toBeUndefined();
+  });
+
   it("normalizes valid Mexican postal codes from user input", () => {
     expect(normalizePostalCode("44100")).toBe("44100");
     expect(normalizePostalCode("44 100")).toBe("44100");

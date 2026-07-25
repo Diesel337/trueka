@@ -1,10 +1,10 @@
 import { categories as demoCategories, privateInterestTags } from "./constants";
-import { filterItemsByBlockedCounterparties } from "./blocking";
 import {
   getMunicipalitiesForFilter,
   getStateForLocationFilter,
   isLocationInFilter,
 } from "./mexico-locations";
+import { getProtectedMediaUrl, normalizeStoredMediaUrl } from "./media-url";
 import { getPostalCodeProximity, normalizePostalCode } from "./postal-code-proximity";
 import {
   currentUser as demoCurrentUser,
@@ -43,14 +43,37 @@ import type {
 
 type DataRow = Record<string, unknown>;
 
+const publicProfileColumns = [
+  "id",
+  "display_name",
+  "avatar_url",
+  "city",
+  "state",
+  "country",
+  "bio",
+  "phone_verified",
+  "email_verified",
+  "rating_avg",
+  "rating_count",
+  "completed_trades_count",
+  "published_items_count",
+  "is_admin",
+  "is_banned",
+  "created_at",
+  "updated_at",
+].join(",");
+
 export type ItemsResult = {
   categories: Category[];
   items: Item[];
   ownersById: Record<string, Profile>;
+  page: number;
+  hasMore: boolean;
 };
 
 export type ItemsResultOptions = {
-  includeBlockedOwners?: boolean;
+  page?: number;
+  pageSize?: number;
 };
 
 export type ItemSearchFilters = {
@@ -98,6 +121,9 @@ export async function getCatalogData() {
 }
 
 export async function getItemsResult(filters?: ItemSearchFilters, options: ItemsResultOptions = {}) {
+  const pageSize = Math.min(Math.max(Math.trunc(options.pageSize ?? 24), 1), 48);
+  const page = Math.max(Math.trunc(options.page ?? 1), 1);
+
   if (!hasSupabasePublicConfig()) {
     const query = filters?.q?.trim().toLocaleLowerCase("es-MX") ?? "";
     const city = filters?.city?.trim() ?? "";
@@ -107,7 +133,7 @@ export async function getItemsResult(filters?: ItemSearchFilters, options: Items
     const valueRange = filters?.valueRange?.trim() ?? "";
     const acceptsOtherCities = filters?.acceptsOtherCities === "true";
     const postalCode = normalizePostalCode(filters?.postalCode);
-    const items = sortItemsForExplore(demoItems.filter((item) => {
+    const matchingItems = sortItemsForExplore(demoItems.filter((item) => {
       const matchesQuery =
         !query
         || item.title.toLocaleLowerCase("es-MX").includes(query)
@@ -130,11 +156,15 @@ export async function getItemsResult(filters?: ItemSearchFilters, options: Items
         && matchesValueRange
         && matchesOtherCities;
     }), filters?.sort, postalCode);
+    const offset = (page - 1) * pageSize;
+    const items = matchingItems.slice(offset, offset + pageSize);
 
     return {
       categories: demoCategories,
       items,
       ownersById: buildOwnersById(items, demoProfiles),
+      page,
+      hasMore: matchingItems.length > offset + pageSize,
     };
   }
 
@@ -153,7 +183,7 @@ export async function getItemsResult(filters?: ItemSearchFilters, options: Items
     .eq("moderation_status", "active");
 
   if (filters?.q) {
-    const text = filters.q.replaceAll("%", "").trim();
+    const text = normalizeItemSearchText(filters.q);
 
     if (text) {
       query = query.or(`title.ilike.%${text}%,description.ilike.%${text}%,known_defects.ilike.%${text}%`);
@@ -198,27 +228,34 @@ export async function getItemsResult(filters?: ItemSearchFilters, options: Items
   }
 
   query = applyItemSort(query, filters?.sort);
+  const offset = (page - 1) * pageSize;
+  query = query.range(offset, offset + pageSize);
 
   const [itemsResult, catalog] = await Promise.all([
     query,
     getCatalogData(),
   ]);
-  const items = rows(itemsResult.data).map(toItem);
-  const blockedCounterpartyIds = options.includeBlockedOwners
-    ? []
-    : await getBlockedCounterpartyProfileIdsForCurrentUser(items.map((item) => item.ownerId));
-  const visibleItems = sortItemsForExplore(
-    filterItemsByBlockedCounterparties(items, blockedCounterpartyIds),
-    filters?.sort,
-    filters?.postalCode,
-  );
+  const resultRows = rows(itemsResult.data);
+  const items = resultRows.slice(0, pageSize).map(toItem);
+  const visibleItems = sortItemsForExplore(items, filters?.sort, filters?.postalCode);
   const owners = await getProfilesByIds(visibleItems.map((item) => item.ownerId));
 
   return {
     categories: catalog.categories,
     items: visibleItems,
     ownersById: buildOwnersById(visibleItems, owners),
+    page,
+    hasMore: resultRows.length > pageSize,
   };
+}
+
+export function normalizeItemSearchText(value: string) {
+  return value
+    .normalize("NFKC")
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80);
 }
 
 function sortItemsForExplore(items: Item[], sort = "newest", viewerPostalCode?: string) {
@@ -275,7 +312,7 @@ function applyItemSort<T extends { order: (column: string, options?: { ascending
   return query.order("created_at", { ascending: false });
 }
 
-export async function getItemDetail(id: string, options: { includeBlockedOwner?: boolean } = {}) {
+export async function getItemDetail(id: string) {
   if (!hasSupabasePublicConfig()) {
     const item = getDemoItem(id);
 
@@ -310,17 +347,6 @@ export async function getItemDetail(id: string, options: { includeBlockedOwner?:
   }
 
   const item = toItem(itemRow);
-
-  if (!options.includeBlockedOwner) {
-    const [currentUserId, blockedCounterpartyIds] = await Promise.all([
-      getCurrentUserId(),
-      getBlockedCounterpartyProfileIdsForCurrentUser([item.ownerId]),
-    ]);
-
-    if (item.ownerId !== currentUserId && blockedCounterpartyIds.includes(item.ownerId)) {
-      return null;
-    }
-  }
 
   const owner = await getProfileById(item.ownerId);
 
@@ -401,7 +427,21 @@ export async function getCurrentProfile() {
     return null;
   }
 
-  const profile = await getProfileById(userId);
+  const { data: privateProfileData, error: privateProfileError } = await supabase
+    .rpc("get_my_profile")
+    .maybeSingle();
+  let profileRow = row(privateProfileData);
+
+  if (privateProfileError) {
+    const { data: legacyProfileData } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .maybeSingle();
+    profileRow = row(legacyProfileData);
+  }
+
+  const profile = profileRow.id ? toProfile(profileRow) : null;
 
   if (!profile) {
     return null;
@@ -497,34 +537,6 @@ async function getBlockedProfileIdsForCurrentUser() {
     .filter(Boolean);
 }
 
-async function getBlockedCounterpartyProfileIdsForCurrentUser(candidateProfileIds: string[]) {
-  if (!hasSupabasePublicConfig()) {
-    return [] as string[];
-  }
-
-  const userId = await getCurrentUserId();
-  const uniqueCandidateIds = Array.from(new Set(candidateProfileIds))
-    .filter((id) => id && id !== userId);
-
-  if (!userId || uniqueCandidateIds.length === 0) {
-    return [] as string[];
-  }
-
-  const supabase = await createSupabaseServerClient();
-  const checks = await Promise.all(
-    uniqueCandidateIds.map(async (candidateId) => {
-      const { data, error } = await supabase.rpc("has_user_block_between", {
-        first_user: userId,
-        second_user: candidateId,
-      });
-
-      return !error && data === true ? candidateId : null;
-    }),
-  );
-
-  return checks.filter((id): id is string => Boolean(id));
-}
-
 export async function getProfileById(id: string) {
   if (!hasSupabasePublicConfig()) {
     return getDemoProfile(id) ?? null;
@@ -561,8 +573,23 @@ export async function getProfilePageData(id: string) {
     };
   }
 
-  const { items } = await getItemsResult();
-  const activeItems = items.filter((item) => item.ownerId === profile.id);
+  const supabase = await createSupabaseServerClient();
+  const { data: itemData } = await supabase
+    .from("items")
+    .select(
+      `
+      *,
+      category:categories(id,name,slug,is_prohibited),
+      item_photos(public_url,storage_path,sort_order),
+      item_public_tags(tags(id,name,slug))
+    `,
+    )
+    .eq("owner_id", profile.id)
+    .eq("status", "active")
+    .eq("moderation_status", "active")
+    .order("created_at", { ascending: false })
+    .limit(24);
+  const activeItems = rows(itemData).map(toItem);
   const viewCounts = await getItemViewCounts(activeItems.map((item) => item.id));
   const activeItemsWithViews = activeItems.map((item) => ({
     ...item,
@@ -971,7 +998,7 @@ export async function getAdminBannedProfiles() {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from("profiles")
-    .select("*")
+    .select(publicProfileColumns)
     .eq("is_banned", true)
     .order("updated_at", { ascending: false })
     .limit(50);
@@ -1559,7 +1586,7 @@ async function getProfilesByIds(ids: string[]) {
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from("profiles")
-    .select("*")
+    .select(publicProfileColumns)
     .in("id", uniqueIds);
 
   return rows(data).map(toProfile);
@@ -1572,13 +1599,16 @@ function toProfile(entry: DataRow): Profile {
   return {
     id: getString(entry, "id"),
     displayName: getString(entry, "display_name") || "Usuario Trueka",
-    avatarUrl: getOptionalString(entry, "avatar_url"),
+    avatarUrl: normalizeStoredMediaUrl(
+      getOptionalString(entry, "avatar_url"),
+      "profile-avatars",
+    ),
     city: getString(entry, "city") || "Guadalajara",
     state: getString(entry, "state") || "Jalisco",
     country: getString(entry, "country") || "México",
     postalCode: getOptionalString(entry, "postal_code"),
     bio: getOptionalString(entry, "bio"),
-    phoneVerified: getBoolean(entry, "phone_verified") && Boolean(getOptionalString(entry, "phone_verified_at")),
+    phoneVerified: getBoolean(entry, "phone_verified"),
     phoneLast4: getOptionalString(entry, "phone_last4"),
     phoneVerifiedAt: getOptionalString(entry, "phone_verified_at"),
     emailVerified: getBoolean(entry, "email_verified"),
@@ -1612,7 +1642,13 @@ function toItem(entry: DataRow): Item {
     (first, second) => getNumber(first, "sort_order", 0) - getNumber(second, "sort_order", 0),
   );
   const photoUrls = photoRows
-    .map((photo) => getOptionalString(photo, "public_url") ?? getOptionalString(photo, "storage_path"))
+    .map((photo) => {
+      const storagePath = getOptionalString(photo, "storage_path");
+
+      return storagePath
+        ? getProtectedMediaUrl("item-photos", storagePath)
+        : normalizeStoredMediaUrl(getOptionalString(photo, "public_url"), "item-photos");
+    })
     .filter((value): value is string => Boolean(value));
 
   return {

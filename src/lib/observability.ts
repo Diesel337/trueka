@@ -5,6 +5,8 @@ type OperationalLogLevel = "info" | "warn" | "error";
 type OperationalContext = Record<string, unknown>;
 
 const sensitiveKeyPattern = /(authorization|cookie|email|key|otp|password|phone|secret|token)/i;
+const publicDatabaseMessagePattern =
+  /^(debes|no puedes|no se puede|solo puedes|este|esta|estos|estas|alg[uú]n|ya\b|has\b|est[aá]s\b|para\b|el trueque|la solicitud|una solicitud|la contraoferta|el art[ií]culo|un art[ií]culo)/i;
 const maxArrayEntries = 10;
 const maxDepth = 4;
 
@@ -55,6 +57,20 @@ export function getErrorMessage(error: unknown) {
   }
 
   return "Unknown error";
+}
+
+export function getPublicDatabaseErrorMessage(error: unknown, fallback: string) {
+  const message = getErrorMessage(error).trim();
+
+  if (
+    message.length > 0
+    && message.length <= 240
+    && publicDatabaseMessagePattern.test(message)
+  ) {
+    return message;
+  }
+
+  return fallback;
 }
 
 export function sanitizeLogContext(value: unknown, depth = 0): unknown {

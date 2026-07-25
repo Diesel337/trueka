@@ -23,6 +23,14 @@ Configura alertas o revisiones manuales para:
 - Fallan subidas al bucket `item-photos` o `profile-avatars`.
 - Crecen reportes abiertos, publicaciones prohibidas en revision o solicitudes de eliminacion sin atender.
 
+El workflow de GitHub Actions `Production uptime` consulta `/api/health` y
+`/api/ready` cada 15 minutos. Si falla, GitHub marca la ejecucion en rojo y
+envia las notificaciones configuradas para Actions en la cuenta o repositorio.
+Tambien se puede ejecutar manualmente desde la pestana Actions.
+
+El workflow `Quality checks` valida cada cambio enviado a `main` y cada pull
+request con lint, pruebas, compilacion y auditoria de dependencias de produccion.
+
 ## Logs utiles
 
 Los endpoints de salud devuelven y registran:

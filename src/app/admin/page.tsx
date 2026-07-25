@@ -119,7 +119,7 @@ export default async function AdminPage() {
     bannedProfiles,
     moderationActions,
   ] = await Promise.all([
-    getItemsResult(undefined, { includeBlockedOwners: true }),
+    getItemsResult(undefined, { pageSize: 48 }),
     getAdminReports(),
     getAdminDataDeletionRequests(),
     getAdminItemModerationReviews(),

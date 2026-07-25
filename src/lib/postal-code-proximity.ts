@@ -11,6 +11,12 @@ export function normalizePostalCode(value?: string | null) {
   return postalCodePattern.test(digits) ? digits : undefined;
 }
 
+export function getPublicPostalCodeArea(value?: string | null) {
+  const postalCode = normalizePostalCode(value);
+
+  return postalCode ? `${postalCode.slice(0, 3)}00` : undefined;
+}
+
 export function getPostalCodeProximity(
   itemPostalCode?: string | null,
   viewerPostalCode?: string | null,

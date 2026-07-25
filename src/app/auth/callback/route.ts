@@ -21,13 +21,24 @@ export async function GET(request: NextRequest) {
 
       if (userId) {
         const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("onboarding_completed_at")
-          .eq("id", userId)
+          .rpc("get_my_profile")
           .maybeSingle();
+        const privateProfile = profile as { onboarding_completed_at?: string | null } | null;
 
-        if (!profileError && !profile?.onboarding_completed_at) {
+        if (!profileError && !privateProfile?.onboarding_completed_at) {
           redirect(`/onboarding?next=${encodeURIComponent(next)}`);
+        }
+
+        if (profileError) {
+          const { data: legacyProfile } = await supabase
+            .from("profiles")
+            .select("onboarding_completed_at")
+            .eq("id", userId)
+            .maybeSingle();
+
+          if (!legacyProfile?.onboarding_completed_at) {
+            redirect(`/onboarding?next=${encodeURIComponent(next)}`);
+          }
         }
       }
     }

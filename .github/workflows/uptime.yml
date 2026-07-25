@@ -1,0 +1,28 @@
+name: Production uptime
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      TRUEKA_BASE_URL: https://trueka-production.up.railway.app
+
+    steps:
+      - name: Check application and database readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for path in api/health api/ready; do
+            echo "Checking ${TRUEKA_BASE_URL}/${path}"
+            response="$(curl --fail --silent --show-error --max-time 15 "${TRUEKA_BASE_URL}/${path}")"
+            echo "${response}" | jq -e '.ok == true' >/dev/null
+          done

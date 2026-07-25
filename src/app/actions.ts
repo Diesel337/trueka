@@ -8,20 +8,17 @@ import type { ActionState } from "@/lib/action-state";
 import { normalizeInternalNext } from "@/lib/auth-redirect";
 import { getRestoredItemState } from "@/lib/admin-moderation";
 import { getNotificationsForCurrentUser, getUnreadNotificationCount } from "@/lib/data";
+import { getProtectedMediaUrl } from "@/lib/media-url";
+import { getPublicDatabaseErrorMessage } from "@/lib/observability";
 import {
   buildProhibitedItemReviewReason,
   findProhibitedItemReviewReasons,
 } from "@/lib/prohibited-items";
-import {
-  getRateLimitExceededMessage,
-  getRateLimitRpcArgs,
-  type RateLimitRuleKey,
-} from "@/lib/rate-limits";
 import { reviewTagSlugs } from "@/lib/review-tags";
 import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCanonicalMunicipalityName, isValidStateMunicipality } from "@/lib/mexico-locations";
-import { normalizePostalCode } from "@/lib/postal-code-proximity";
+import { getPublicPostalCodeArea, normalizePostalCode } from "@/lib/postal-code-proximity";
 import { canCompleteTradeRequest, canUseTradeRequestChat } from "@/lib/trade-rules";
 import type { AdminModerationActionName, Item, ItemStatus, TradeRequestStatus } from "@/lib/types";
 
@@ -241,7 +238,7 @@ export async function signInWithEmailAction(
   if (error) {
     return {
       ok: false,
-      message: error.message,
+      message: getAuthActionErrorMessage(error, "sign-in"),
     };
   }
 
@@ -292,7 +289,7 @@ export async function signUpWithEmailAction(
   if (error) {
     return {
       ok: false,
-      message: error.message,
+      message: getAuthActionErrorMessage(error, "sign-up"),
     };
   }
 
@@ -359,18 +356,6 @@ export async function createTradeRequestAction(
     };
   }
 
-  const rateLimitError =
-    (await getRateLimitErrorState(supabase, "tradeRequestCreate"))
-    ?? (await getRateLimitErrorState(
-      supabase,
-      "tradeRequestCreateForItem",
-      parsed.data.requestedItemId,
-    ));
-
-  if (rateLimitError) {
-    return rateLimitError;
-  }
-
   const { data: requestId, error } = await supabase.rpc("create_trade_request", {
     p_requested_item_id: parsed.data.requestedItemId,
     p_offered_item_ids: parsed.data.offeredItemIds,
@@ -380,7 +365,10 @@ export async function createTradeRequestAction(
   if (error) {
     return {
       ok: false,
-      message: error.message,
+      message: getPublicDatabaseErrorMessage(
+        error,
+        "No se pudo enviar la solicitud. Revisa que los articulos sigan disponibles.",
+      ),
     };
   }
 
@@ -508,13 +496,13 @@ export async function createItemAction(
       condition: parsed.data.condition,
       city: canonicalCity,
       state: parsed.data.state,
-      postal_code: emptyToNull(parsed.data.postalCode),
+      postal_code: getPublicPostalCodeArea(parsed.data.postalCode) ?? null,
       approximate_zone: emptyToNull(parsed.data.approximateZone),
       approximate_value_range: emptyToNull(parsed.data.approximateValueRange),
       accepts_multiple_items: formData.has("acceptsMultipleItems"),
       accepts_other_cities: formData.has("acceptsOtherCities"),
       public_preferences: emptyToNull(parsed.data.publicPreferences),
-      status: intent === "draft" || needsModerationReview ? "draft" : "active",
+      status: "draft",
       moderation_status: needsModerationReview ? "pending" : "active",
     })
     .select("id")
@@ -544,16 +532,14 @@ export async function createItemAction(
 
       return {
         ok: false,
-        message: uploadError?.message ?? "No se pudo subir una foto.",
+        message: "No se pudo subir una foto. Revisa el formato y el tamano del archivo.",
       };
     }
-
-    const { data: publicUrl } = supabase.storage.from("item-photos").getPublicUrl(uploaded.path);
 
     photoRows.push({
       item_id: item.id,
       storage_path: uploaded.path,
-      public_url: publicUrl.publicUrl,
+      public_url: getProtectedMediaUrl("item-photos", uploaded.path),
       sort_order: index,
     });
   }
@@ -566,7 +552,10 @@ export async function createItemAction(
 
       return {
         ok: false,
-        message: error.message,
+        message: getPublicDatabaseErrorMessage(
+          error,
+          "No se pudieron guardar las fotos del articulo.",
+        ),
       };
     }
   }
@@ -608,6 +597,19 @@ export async function createItemAction(
   }
 
   if (intent === "publish" && !needsModerationReview) {
+    const { error: publishError } = await supabase
+      .from("items")
+      .update({ status: "active" })
+      .eq("id", item.id)
+      .eq("owner_id", userId);
+
+    if (publishError) {
+      return {
+        ok: false,
+        message: "La publicacion se guardo como borrador, pero no pudo activarse.",
+      };
+    }
+
     await supabase.rpc("notify_item_interest_matches", {
       p_item_id: item.id,
     });
@@ -712,7 +714,7 @@ export async function updateItemAction(
   if (existingItemError || !existingItem) {
     return {
       ok: false,
-      message: existingItemError?.message ?? "Publicación no encontrada.",
+      message: "Publicación no encontrada.",
     };
   }
 
@@ -788,16 +790,14 @@ export async function updateItemAction(
 
       return {
         ok: false,
-        message: uploadError?.message ?? "No se pudo subir una foto.",
+        message: "No se pudo subir una foto. Revisa el formato y el tamano del archivo.",
       };
     }
-
-    const { data: publicUrl } = supabase.storage.from("item-photos").getPublicUrl(uploaded.path);
 
     uploadedPhotoRows.push({
       item_id: parsed.data.itemId,
       storage_path: uploaded.path,
-      public_url: publicUrl.publicUrl,
+      public_url: getProtectedMediaUrl("item-photos", uploaded.path),
       sort_order: index,
     });
   }
@@ -812,7 +812,7 @@ export async function updateItemAction(
       condition: parsed.data.condition,
       city: canonicalCity,
       state: parsed.data.state,
-      postal_code: emptyToNull(parsed.data.postalCode),
+      postal_code: getPublicPostalCodeArea(parsed.data.postalCode) ?? null,
       approximate_zone: emptyToNull(parsed.data.approximateZone),
       approximate_value_range: emptyToNull(parsed.data.approximateValueRange),
       accepts_multiple_items: formData.has("acceptsMultipleItems"),
@@ -833,7 +833,11 @@ export async function updateItemAction(
 
     return {
       ok: false,
-      message: getPostalCodePersistenceErrorMessage(updateError.message) ?? updateError.message,
+      message: getPostalCodePersistenceErrorMessage(updateError.message)
+        ?? getPublicDatabaseErrorMessage(
+          updateError,
+          "No se pudieron guardar los cambios de la publicacion.",
+        ),
     };
   }
 
@@ -845,7 +849,10 @@ export async function updateItemAction(
 
       return {
         ok: false,
-        message: error.message,
+        message: getPublicDatabaseErrorMessage(
+          error,
+          "No se pudieron guardar las fotos nuevas del articulo.",
+        ),
       };
     }
 
@@ -964,7 +971,7 @@ export async function sendMessageAction(formData: FormData): Promise<ActionState
   if (requestError || !tradeRequest) {
     return {
       ok: false,
-      message: requestError?.message ?? "Solicitud no encontrada.",
+      message: "Solicitud no encontrada.",
     };
   }
 
@@ -987,18 +994,6 @@ export async function sendMessageAction(formData: FormData): Promise<ActionState
     };
   }
 
-  const rateLimitError =
-    (await getRateLimitErrorState(supabase, "messageSend"))
-    ?? (await getRateLimitErrorState(
-      supabase,
-      "messageSendInThread",
-      parsed.data.tradeRequestId,
-    ));
-
-  if (rateLimitError) {
-    return rateLimitError;
-  }
-
   const { error } = await supabase.from("messages").insert({
     trade_request_id: parsed.data.tradeRequestId,
     sender_id: userId,
@@ -1008,7 +1003,10 @@ export async function sendMessageAction(formData: FormData): Promise<ActionState
   if (error) {
     return {
       ok: false,
-      message: error.message,
+      message: getPublicDatabaseErrorMessage(
+        error,
+        "No se pudo enviar el mensaje. Intenta de nuevo.",
+      ),
     };
   }
 
@@ -1103,7 +1101,7 @@ export async function updateItemStatusAction(
   if (itemError || !item) {
     return {
       ok: false,
-      message: itemError?.message ?? "Publicación no encontrada.",
+      message: "Publicación no encontrada.",
     };
   }
 
@@ -1163,7 +1161,10 @@ export async function updateItemStatusAction(
       if (error) {
         return {
           ok: false,
-          message: error.message,
+          message: getPublicDatabaseErrorMessage(
+            error,
+            "No se pudo enviar la publicacion a revision.",
+          ),
         };
       }
 
@@ -1199,7 +1200,10 @@ export async function updateItemStatusAction(
   if (error) {
     return {
       ok: false,
-      message: error.message,
+      message: getPublicDatabaseErrorMessage(
+        error,
+        "No se pudo cambiar el estado de la publicacion.",
+      ),
     };
   }
 
@@ -1264,7 +1268,7 @@ export async function retireItemAction(
   if (itemError || !item) {
     return {
       ok: false,
-      message: itemError?.message ?? "Publicación no encontrada.",
+      message: "Publicación no encontrada.",
     };
   }
 
@@ -1300,7 +1304,10 @@ export async function retireItemAction(
   if (error) {
     return {
       ok: false,
-      message: error.message,
+      message: getPublicDatabaseErrorMessage(
+        error,
+        "No se pudo retirar la publicacion.",
+      ),
     };
   }
 
@@ -1383,7 +1390,7 @@ export async function toggleSavedItemAction(formData: FormData): Promise<ActionS
   if (itemError || !item) {
     return {
       ok: false,
-      message: itemError?.message ?? "No encontramos esta publicación.",
+      message: "No encontramos esta publicación.",
     };
   }
 
@@ -1513,7 +1520,7 @@ async function updateTradeRequestStatus(formData: FormData): Promise<ActionState
   if (requestError || !tradeRequest) {
     return {
       ok: false,
-      message: requestError?.message ?? "Solicitud no encontrada.",
+      message: "Solicitud no encontrada.",
     };
   }
 
@@ -1583,7 +1590,10 @@ async function updateTradeRequestStatus(formData: FormData): Promise<ActionState
     if (error) {
       return {
         ok: false,
-        message: error.message,
+        message: getPublicDatabaseErrorMessage(
+          error,
+          "No se pudo guardar la confirmacion del trueque.",
+        ),
       };
     }
 
@@ -1612,7 +1622,10 @@ async function updateTradeRequestStatus(formData: FormData): Promise<ActionState
     if (error) {
       return {
         ok: false,
-        message: error.message,
+        message: getPublicDatabaseErrorMessage(
+          error,
+          "No se pudo actualizar la solicitud.",
+        ),
       };
     }
   }
@@ -1677,7 +1690,10 @@ export async function createCounterofferAction(
   if (error) {
     return {
       ok: false,
-      message: error.message,
+      message: getPublicDatabaseErrorMessage(
+        error,
+        "No se pudo crear la contraoferta.",
+      ),
     };
   }
 
@@ -1738,7 +1754,10 @@ export async function respondCounterofferAction(
   if (error) {
     return {
       ok: false,
-      message: error.message,
+      message: getPublicDatabaseErrorMessage(
+        error,
+        "No se pudo responder la contraoferta.",
+      ),
     };
   }
 
@@ -1932,18 +1951,6 @@ export async function reportContentAction(
     };
   }
 
-  const rateLimitError =
-    (await getRateLimitErrorState(supabase, "reportCreate"))
-    ?? (await getRateLimitErrorState(
-      supabase,
-      "reportCreateForTarget",
-      getReportTargetKey(parsed.data),
-    ));
-
-  if (rateLimitError) {
-    return rateLimitError;
-  }
-
   const { error } = await supabase.from("reports").insert({
     reporter_id: userId,
     reported_user_id: emptyToNull(parsed.data.reportedUserId),
@@ -1956,7 +1963,10 @@ export async function reportContentAction(
   if (error) {
     return {
       ok: false,
-      message: error.message,
+      message: getPublicDatabaseErrorMessage(
+        error,
+        "No se pudo enviar el reporte. Intenta de nuevo.",
+      ),
     };
   }
 
@@ -2021,7 +2031,8 @@ export async function requestDataDeletionAction(
   if (existingError) {
     return {
       ok: false,
-      message: getDataDeletionRequestErrorMessage(existingError.message) ?? existingError.message,
+      message: getDataDeletionRequestErrorMessage(existingError.message)
+        ?? "No se pudo revisar tu solicitud de eliminacion.",
     };
   }
 
@@ -2042,7 +2053,11 @@ export async function requestDataDeletionAction(
   if (error) {
     return {
       ok: false,
-      message: getDataDeletionRequestErrorMessage(error.message) ?? error.message,
+      message: getDataDeletionRequestErrorMessage(error.message)
+        ?? getPublicDatabaseErrorMessage(
+          error,
+          "No se pudo registrar la solicitud de eliminacion.",
+        ),
     };
   }
 
@@ -2109,7 +2124,10 @@ export async function blockUserAction(
   if (error) {
     return {
       ok: false,
-      message: error.message,
+      message: getPublicDatabaseErrorMessage(
+        error,
+        "No se pudo bloquear a esta persona.",
+      ),
     };
   }
 
@@ -2166,7 +2184,10 @@ export async function unblockUserAction(
   if (error) {
     return {
       ok: false,
-      message: error.message,
+      message: getPublicDatabaseErrorMessage(
+        error,
+        "No se pudo desbloquear a esta persona.",
+      ),
     };
   }
 
@@ -2244,7 +2265,7 @@ export async function rateTradeRequestAction(
   if (requestError || !tradeRequest) {
     return {
       ok: false,
-      message: requestError?.message ?? "Solicitud no encontrada.",
+      message: "Solicitud no encontrada.",
     };
   }
 
@@ -2299,7 +2320,10 @@ export async function rateTradeRequestAction(
   if (error) {
     return {
       ok: false,
-      message: error.message,
+      message: getPublicDatabaseErrorMessage(
+        error,
+        "No se pudo guardar la calificacion.",
+      ),
     };
   }
 
@@ -2391,13 +2415,12 @@ export async function updateProfileAction(
     if (uploadError || !uploaded) {
       return {
         ok: false,
-        message: uploadError?.message ?? "No se pudo subir la foto de perfil.",
+        message: "No se pudo subir la foto de perfil. Revisa el formato y el tamano.",
       };
     }
 
-    const { data: publicUrl } = supabase.storage.from("profile-avatars").getPublicUrl(uploaded.path);
     avatarPath = uploaded.path;
-    avatarUrl = publicUrl.publicUrl;
+    avatarUrl = getProtectedMediaUrl("profile-avatars", uploaded.path);
   }
 
   const { error } = await supabase
@@ -2419,7 +2442,11 @@ export async function updateProfileAction(
 
     return {
       ok: false,
-      message: getPostalCodePersistenceErrorMessage(error.message) ?? error.message,
+      message: getPostalCodePersistenceErrorMessage(error.message)
+        ?? getPublicDatabaseErrorMessage(
+          error,
+          "No se pudieron guardar los cambios del perfil.",
+        ),
     };
   }
 
@@ -2705,13 +2732,12 @@ export async function completeOnboardingAction(
     if (uploadError || !uploaded) {
       return {
         ok: false,
-        message: uploadError?.message ?? "No se pudo subir la foto de perfil.",
+        message: "No se pudo subir la foto de perfil. Revisa el formato y el tamano.",
       };
     }
 
-    const { data: publicUrl } = supabase.storage.from("profile-avatars").getPublicUrl(uploaded.path);
     avatarPath = uploaded.path;
-    avatarUrl = publicUrl.publicUrl;
+    avatarUrl = getProtectedMediaUrl("profile-avatars", uploaded.path);
   }
 
   const { error } = await supabase
@@ -3207,28 +3233,6 @@ async function createItemModerationReview(
   });
 }
 
-async function getRateLimitErrorState(
-  supabase: SupabaseServerClient,
-  ruleKey: RateLimitRuleKey,
-  targetKey?: string,
-): Promise<ActionState | null> {
-  const { data, error } = await supabase.rpc(
-    "consume_rate_limit",
-    getRateLimitRpcArgs(ruleKey, targetKey),
-  );
-
-  if (error) {
-    return null;
-  }
-
-  return data === true
-    ? null
-    : {
-        ok: false,
-        message: getRateLimitExceededMessage(ruleKey),
-      };
-}
-
 function getRecordString(value: unknown, key: string) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return undefined;
@@ -3287,16 +3291,44 @@ function getDataDeletionRequestErrorMessage(message?: string | null) {
   return null;
 }
 
-function getReportTargetKey(input: {
-  reportedUserId?: string;
-  reportedItemId?: string;
-  tradeRequestId?: string;
-}) {
-  return [
-    input.reportedUserId ? `user:${input.reportedUserId}` : undefined,
-    input.reportedItemId ? `item:${input.reportedItemId}` : undefined,
-    input.tradeRequestId ? `trade:${input.tradeRequestId}` : undefined,
-  ].filter(Boolean).join("|");
+function getAuthActionErrorMessage(
+  error: { code?: string; message?: string },
+  action: "sign-in" | "sign-up",
+) {
+  const message = error.message?.toLocaleLowerCase("es-MX") ?? "";
+  const code = error.code?.toLocaleLowerCase("en-US") ?? "";
+
+  if (
+    code.includes("invalid_credentials")
+    || message.includes("invalid login")
+    || message.includes("invalid credentials")
+  ) {
+    return "El correo o la contrasena no son correctos.";
+  }
+
+  if (code.includes("email_not_confirmed") || message.includes("email not confirmed")) {
+    return "Confirma tu correo antes de entrar.";
+  }
+
+  if (
+    code.includes("user_already_exists")
+    || message.includes("already registered")
+    || message.includes("already exists")
+  ) {
+    return "Ese correo ya tiene una cuenta. Intenta iniciar sesion.";
+  }
+
+  if (message.includes("password")) {
+    return "La contrasena no cumple los requisitos de seguridad.";
+  }
+
+  if (code.includes("rate_limit") || message.includes("too many") || message.includes("rate limit")) {
+    return "Demasiados intentos por ahora. Espera unos minutos y vuelve a intentar.";
+  }
+
+  return action === "sign-in"
+    ? "No se pudo iniciar sesion. Intenta de nuevo."
+    : "No se pudo crear la cuenta. Intenta de nuevo.";
 }
 
 async function getPostAuthRedirect(
@@ -3312,12 +3344,23 @@ async function getPostAuthRedirect(
   }
 
   const { data, error } = await supabase
+    .rpc("get_my_profile")
+    .maybeSingle();
+  const privateProfile = data as { onboarding_completed_at?: string | null } | null;
+
+  if (!error) {
+    return privateProfile?.onboarding_completed_at
+      ? safeNext
+      : `/onboarding?next=${encodeURIComponent(safeNext)}`;
+  }
+
+  const { data: legacyProfile } = await supabase
     .from("profiles")
     .select("onboarding_completed_at")
     .eq("id", userId)
     .maybeSingle();
 
-  if (error || data?.onboarding_completed_at) {
+  if (legacyProfile?.onboarding_completed_at) {
     return safeNext;
   }
 
@@ -3355,7 +3398,10 @@ async function insertItemTags(
     .in("slug", tagSlugs);
 
   if (tagsError) {
-    return tagsError.message;
+    return getPublicDatabaseErrorMessage(
+      tagsError,
+      "No se pudieron guardar las etiquetas del articulo.",
+    );
   }
 
   const tagRows = (tags ?? []).map((tag) => ({
@@ -3369,7 +3415,12 @@ async function insertItemTags(
 
   const { error } = await supabase.from(tableName).insert(tagRows);
 
-  return error?.message ?? null;
+  return error
+    ? getPublicDatabaseErrorMessage(
+      error,
+      "No se pudieron guardar las etiquetas del articulo.",
+    )
+    : null;
 }
 
 async function removeStoragePhotos(paths: string[]) {
@@ -3491,7 +3542,7 @@ function getSavedItemsErrorMessage(message: string) {
     return "Falta correr la migración de guardados en Supabase.";
   }
 
-  return message || "No se pudo actualizar guardados.";
+  return "No se pudo actualizar guardados.";
 }
 
 function getOnboardingErrorMessage(message: string) {
@@ -3506,7 +3557,7 @@ function getOnboardingErrorMessage(message: string) {
     return "Falta correr la migración 0011 de onboarding en Supabase.";
   }
 
-  return message || "No se pudo completar el perfil.";
+  return "No se pudo completar el perfil.";
 }
 
 function getPhoneVerificationErrorMessage(message: string) {
@@ -3544,7 +3595,7 @@ function getPhoneVerificationErrorMessage(message: string) {
     return "Demasiados intentos por ahora. Espera unos minutos y vuelve a intentar.";
   }
 
-  return message || "No se pudo verificar el teléfono.";
+  return "No se pudo verificar el teléfono.";
 }
 
 function normalizePhoneNumber(value: string) {
