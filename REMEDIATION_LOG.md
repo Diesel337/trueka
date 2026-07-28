@@ -32,6 +32,7 @@ Base revisada: `d9f4913`
 | EXT-01 | Critica | Ejecutar migraciones 0024 y 0025 en Supabase | Verificado |
 | REG-01 | Alta | Restaurar guardado de perfil tras ocultar columnas privadas | Verificado |
 | REG-02 | Alta | Permitir cerrar una negociacion aceptada no realizada | Corregido |
+| REG-03 | Alta | Mantener visible una negociacion al reservar sus articulos | Corregido |
 | OPS-03 | Media | Verificar GitHub Actions y monitor de produccion | Verificado |
 | EXT-02 | Baja | Proteger main cuando el flujo adopte ramas y PR | Pendiente externo |
 | DEP-02 | Baja | Avisos de auditoria en herramientas de desarrollo de ESLint | Pendiente externo |
@@ -152,6 +153,23 @@ Base revisada: `d9f4913`
   `200` en portada y `/api/health` desde el paquete standalone.
 - Falta ejecutar la migracion, desplegar y terminar la negociacion de prueba
   desde una de las dos cuentas para verificar `REG-02`.
+- La primera prueba en produccion mostro que la accion intentaba consultar
+  directamente las confirmaciones protegidas y devolvia
+  `No se pudo comprobar el estado de la negociacion.`. Se elimino esa lectura
+  duplicada; la politica de base de datos sigue comprobando atomicamente que no
+  exista ninguna confirmacion antes de permitir la cancelacion.
+- La misma prueba detecto que, despues de reservar ambos articulos, cada cuenta
+  dejaba de poder leer el articulo de la otra persona. Como la vista necesita
+  ambos articulos, la negociacion desaparecia al volver a cargarla.
+- La migracion `0028_trade_participant_item_visibility.sql` permite que los dos
+  participantes lean exclusivamente los articulos, fotos y etiquetas publicas
+  implicados en una negociacion aceptada o completada. Las etiquetas ocultas
+  siguen siendo visibles solo para el propietario.
+- Los cambios de estado tambien invalidan `Mis publicaciones`, para que las
+  secciones `En negociacion`, `Activas` e `Intercambiadas` se actualicen al
+  terminar cada operacion.
+- Validacion local de la correccion: lint aprobado, 61 pruebas aprobadas y
+  build de produccion aprobado.
 
 ### 2026-07-27 - Verificacion operativa de GitHub
 

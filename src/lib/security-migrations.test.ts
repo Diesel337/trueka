@@ -19,6 +19,9 @@ describe("security migrations", () => {
   const privacy = readMigration("0025_profile_privacy.sql");
   const profileWrites = readMigration("0026_profile_write_rpcs.sql");
   const negotiationExit = readMigration("0027_accepted_negotiation_exit.sql");
+  const tradeItemVisibility = readMigration(
+    "0028_trade_participant_item_visibility.sql",
+  );
 
   it("protects profile, item and trade request updates", () => {
     expect(hardening).toContain("profile_self_update_is_safe");
@@ -107,7 +110,40 @@ describe("security migrations", () => {
 
     expect(actions).toContain("acknowledgeCancellation: z.literal(\"on\").optional()");
     expect(actions).toContain("canCancelTradeRequest");
+    expect(actions).not.toMatch(
+      /\.from\("trade_completion_confirmations"\)\s*\.select/s,
+    );
     expect(statusForm).toContain('name="acknowledgeCancellation"');
     expect(statusForm).toContain("Terminar negociación");
+  });
+
+  it("keeps reserved trade items visible only to their participants", () => {
+    expect(tradeItemVisibility).toContain(
+      "create or replace function public.can_view_trade_item(p_item_id uuid)",
+    );
+    expect(tradeItemVisibility).toContain("security definer");
+    expect(tradeItemVisibility).toContain(
+      "request.status in ('accepted', 'completed')",
+    );
+    expect(tradeItemVisibility).toContain(
+      "auth.uid() in (request.requester_id, request.receiver_id)",
+    );
+    expect(tradeItemVisibility).toContain(
+      "from public.trade_request_offered_items offered",
+    );
+    expect(tradeItemVisibility).toContain(
+      "status in ('reserved', 'traded')",
+    );
+    expect(tradeItemVisibility).toContain(
+      'drop policy if exists "item photos visible with item"',
+    );
+    expect(tradeItemVisibility).toContain(
+      'drop policy if exists "public item tags readable with item"',
+    );
+    expect(tradeItemVisibility).toContain(
+      'drop policy if exists "item photos readable with visible item"',
+    );
+    expect(tradeItemVisibility).toContain("on storage.objects for select");
+    expect(tradeItemVisibility).not.toContain("item_private_interest_tags");
   });
 });

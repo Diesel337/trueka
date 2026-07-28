@@ -1559,35 +1559,15 @@ async function updateTradeRequestStatus(formData: FormData): Promise<ActionState
       };
     }
 
-    let hasCompletionConfirmation = false;
-
-    if (currentStatus === "accepted") {
-      const { count, error: confirmationError } = await supabase
-        .from("trade_completion_confirmations")
-        .select("id", { count: "exact", head: true })
-        .eq("trade_request_id", parsed.data.tradeRequestId);
-
-      if (confirmationError) {
-        return {
-          ok: false,
-          message: "No se pudo comprobar el estado de la negociación.",
-        };
-      }
-
-      hasCompletionConfirmation = (count ?? 0) > 0;
-    }
-
     if (!canCancelTradeRequest({
       status: currentStatus as TradeRequestStatus,
       isRequester,
       isReceiver,
-      hasCompletionConfirmation,
+      hasCompletionConfirmation: false,
     })) {
       return {
         ok: false,
-        message: hasCompletionConfirmation
-          ? "La negociación ya tiene una confirmación de intercambio y no se puede cancelar."
-          : "No puedes cancelar esta solicitud o negociación.",
+        message: "No puedes cancelar esta solicitud o negociación.",
       };
     }
 
@@ -1652,6 +1632,7 @@ async function updateTradeRequestStatus(formData: FormData): Promise<ActionState
     revalidatePath("/requests");
     revalidatePath(`/requests/${parsed.data.tradeRequestId}`);
     revalidatePath("/profile");
+    revalidatePath("/items/manage");
     revalidatePath("/", "layout");
 
     return {
@@ -1684,6 +1665,7 @@ async function updateTradeRequestStatus(formData: FormData): Promise<ActionState
 
   revalidatePath("/requests");
   revalidatePath(`/requests/${parsed.data.tradeRequestId}`);
+  revalidatePath("/items/manage");
   revalidatePath("/", "layout");
 
   return {
