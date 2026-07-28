@@ -29,9 +29,11 @@ Base revisada: `d9f4913`
 | OPS-01 | Media | Agregar encabezados de seguridad | Verificado |
 | OPS-02 | Media | Vigilar disponibilidad real de Supabase | Corregido |
 | QA-01 | Alta | Agregar pruebas de autorizacion, auth y regresion | Verificado |
-| EXT-01 | Critica | Ejecutar migraciones 0024 y 0025 en Supabase | Pendiente externo |
+| EXT-01 | Critica | Ejecutar migraciones 0024 y 0025 en Supabase | Verificado |
+| REG-01 | Alta | Restaurar guardado de perfil tras ocultar columnas privadas | Corregido |
 | EXT-02 | Media | Confirmar alertas de GitHub Actions y proteccion de main | Pendiente externo |
 | DEP-02 | Baja | Avisos de auditoria en herramientas de desarrollo de ESLint | Pendiente externo |
+| QA-02 | Alta | Probar escritura autenticada despues del endurecimiento RLS | En curso |
 | UX-01 | Media | Auditoria visual actual en escritorio y movil | Pendiente externo |
 
 ## Registro
@@ -74,9 +76,6 @@ Base revisada: `d9f4913`
 
 ### Pendientes externos
 
-- Correr `0024_security_hardening.sql` y despues
-  `0025_profile_privacy.sql` en Supabase. El despliegue incluye compatibilidad
-  temporal para no romper login mientras se ejecutan.
 - Confirmar que GitHub Actions esta habilitado y que llegan notificaciones de
   fallos del workflow `Production uptime`.
 - Activar proteccion de la rama `main` para exigir `Quality checks` antes de
@@ -90,6 +89,40 @@ Base revisada: `d9f4913`
   ESLint. La actualizacion automatica disponible rompe plugins de
   `eslint-config-next`; produccion no incluye esas dependencias y su audit esta
   limpio.
+
+### 2026-07-24 - Verificacion posterior a migraciones
+
+- El usuario confirmo la ejecucion de `0024_security_hardening.sql` y
+  `0025_profile_privacy.sql` en Supabase.
+- Railway desplego correctamente el commit `6dbf60d`; `/api/health` y
+  `/api/ready` respondieron `200` con base de datos disponible.
+- Portada, Explorar, perfil publico y detalle de publicacion respondieron sin
+  errores. Explorar caliente respondio entre 0.4 y 1 segundo.
+- La carga ligera completo 117 solicitudes con cero fallos: p50 293 ms,
+  p95 4.393 s y maximo 15.574 s. Los picos de portada quedan bajo vigilancia.
+- Una consulta anonima puede leer nombre publico, pero recibe `401` al pedir
+  `postal_code` o `phone_last4` de perfiles.
+- El bucket `item-photos` ya no acepta URLs publicas nuevas; la ruta protegida
+  de Trueka entrego una foto real con estado `200`.
+- Una URL publica antigua pudo responder desde cache CDN; una consulta con
+  cache nuevo fue rechazada. La copia anterior debe expirar por su TTL.
+- Falta probar con sesion iniciada: actualizar perfil, publicar/editar una
+  publicacion, enviar una solicitud y abrir chat.
+
+### 2026-07-27 - Regresion de guardado de perfil
+
+- La prueba manual autenticada detecto que el perfil ya no se podia guardar
+  despues de limitar las columnas privadas en `0025_profile_privacy.sql`.
+- La migracion `0026_profile_write_rpcs.sql` reemplaza las escrituras directas
+  del usuario por funciones cerradas para datos de perfil, onboarding, correo y
+  telefono.
+- Las nuevas funciones validan la sesion, bloqueos, longitudes, codigo postal y
+  propiedad de la foto. No aceptan reputacion, permisos, sanciones ni otros
+  campos de confianza como parametros.
+- La aplicacion ya usa esas funciones y conserva la limpieza de una foto subida
+  si el guardado falla.
+- Falta ejecutar `0026`, desplegar el cambio y repetir la prueba manual de
+  guardado antes de cerrar `REG-01` y `QA-02` como verificados.
 
 ## Criterios de cierre
 

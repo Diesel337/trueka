@@ -455,10 +455,7 @@ export async function getCurrentProfile() {
   );
 
   if (authEmailVerified && !profile.emailVerified) {
-    await supabase
-      .from("profiles")
-      .update({ email_verified: true })
-      .eq("id", userId);
+    await supabase.rpc("sync_my_email_verification");
 
     return {
       ...profile,

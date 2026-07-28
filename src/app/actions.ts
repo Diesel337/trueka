@@ -2423,17 +2423,15 @@ export async function updateProfileAction(
     avatarUrl = getProtectedMediaUrl("profile-avatars", uploaded.path);
   }
 
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      display_name: parsed.data.displayName,
-      city: canonicalCity,
-      state: parsed.data.state,
-      postal_code: emptyToNull(parsed.data.postalCode),
-      bio: emptyToNull(parsed.data.bio),
-      ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
-    })
-    .eq("id", userId);
+  const { error } = await supabase.rpc("update_my_profile", {
+    p_display_name: parsed.data.displayName,
+    p_city: canonicalCity,
+    p_state: parsed.data.state,
+    p_postal_code: emptyToNull(parsed.data.postalCode),
+    p_bio: emptyToNull(parsed.data.bio),
+    p_avatar_url: avatarUrl ?? null,
+    p_complete_onboarding: false,
+  });
 
   if (error) {
     if (avatarPath) {
@@ -2527,15 +2525,7 @@ export async function startPhoneVerificationAction(
     };
   }
 
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .update({
-      phone_verified: false,
-      phone_last4: getPhoneLast4(normalizedPhone),
-      phone_verified_at: null,
-      phone_verification_started_at: new Date().toISOString(),
-    })
-    .eq("id", userId);
+  const { error: profileError } = await supabase.rpc("sync_my_phone_verification");
 
   if (profileError) {
     return {
@@ -2616,15 +2606,7 @@ export async function confirmPhoneVerificationAction(
     };
   }
 
-  const verifiedAt = new Date().toISOString();
-  const { error: profileError } = await supabase
-    .from("profiles")
-    .update({
-      phone_verified: true,
-      phone_last4: getPhoneLast4(normalizedPhone),
-      phone_verified_at: verifiedAt,
-    })
-    .eq("id", userId);
+  const { error: profileError } = await supabase.rpc("sync_my_phone_verification");
 
   if (profileError) {
     return {
@@ -2740,18 +2722,15 @@ export async function completeOnboardingAction(
     avatarUrl = getProtectedMediaUrl("profile-avatars", uploaded.path);
   }
 
-  const { error } = await supabase
-    .from("profiles")
-    .update({
-      display_name: parsed.data.displayName,
-      city: canonicalCity,
-      state: parsed.data.state,
-      postal_code: emptyToNull(parsed.data.postalCode),
-      bio: emptyToNull(parsed.data.bio),
-      onboarding_completed_at: new Date().toISOString(),
-      ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
-    })
-    .eq("id", userId);
+  const { error } = await supabase.rpc("update_my_profile", {
+    p_display_name: parsed.data.displayName,
+    p_city: canonicalCity,
+    p_state: parsed.data.state,
+    p_postal_code: emptyToNull(parsed.data.postalCode),
+    p_bio: emptyToNull(parsed.data.bio),
+    p_avatar_url: avatarUrl ?? null,
+    p_complete_onboarding: true,
+  });
 
   if (error) {
     if (avatarPath) {
@@ -3617,10 +3596,6 @@ function normalizePhoneNumber(value: string) {
   }
 
   return /^\d{10,15}$/.test(digits) ? `+${digits}` : null;
-}
-
-function getPhoneLast4(value: string) {
-  return value.replace(/\D/g, "").slice(-4);
 }
 
 function safeFileName(value: string) {
