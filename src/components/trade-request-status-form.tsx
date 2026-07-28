@@ -109,6 +109,44 @@ export function CancelTradeRequestForm({ tradeRequestId }: StatusFormProps) {
   );
 }
 
+export function EndTradeNegotiationForm({ tradeRequestId }: StatusFormProps) {
+  const router = useRouter();
+  const [state, action, pending] = useActionState(updateTradeRequestStatusAction, initialActionState);
+
+  useEffect(() => {
+    if (state.ok) {
+      router.refresh();
+    }
+  }, [router, state.ok]);
+
+  return (
+    <form action={action} className="grid gap-3">
+      <input type="hidden" name="tradeRequestId" value={tradeRequestId} />
+      <input type="hidden" name="status" value="cancelled" />
+      <label className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-950">
+        <input
+          required
+          type="checkbox"
+          name="acknowledgeCancellation"
+          className="mt-0.5 size-4 shrink-0 accent-emerald-700"
+        />
+        <span>
+          Confirmo que el intercambio no se realizó. La negociación terminará y los artículos
+          volverán a estar disponibles.
+        </span>
+      </label>
+      <button
+        disabled={pending}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-red-300 px-3 py-2 text-sm font-semibold text-red-800 hover:bg-red-50 disabled:bg-stone-100 disabled:text-stone-400"
+      >
+        <XCircle aria-hidden="true" size={16} />
+        {pending ? "Terminando..." : "Terminar negociación"}
+      </button>
+      <StatusMessage ok={state.ok} message={state.message} />
+    </form>
+  );
+}
+
 export function CompleteTradeRequestForm({
   tradeRequestId,
   currentUserConfirmed,

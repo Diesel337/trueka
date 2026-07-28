@@ -19,7 +19,11 @@ import { hasSupabasePublicConfig } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCanonicalMunicipalityName, isValidStateMunicipality } from "@/lib/mexico-locations";
 import { getPublicPostalCodeArea, normalizePostalCode } from "@/lib/postal-code-proximity";
-import { canCompleteTradeRequest, canUseTradeRequestChat } from "@/lib/trade-rules";
+import {
+  canCancelTradeRequest,
+  canCompleteTradeRequest,
+  canUseTradeRequestChat,
+} from "@/lib/trade-rules";
 import type { AdminModerationActionName, Item, ItemStatus, TradeRequestStatus } from "@/lib/types";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createSupabaseServerClient>>;
@@ -129,6 +133,7 @@ const tradeRequestStatusSchema = z.object({
   tradeRequestId: z.string().uuid(),
   status: z.enum(["accepted", "rejected", "cancelled", "completed"]),
   rejectionReason: z.string().trim().optional(),
+  acknowledgeCancellation: z.literal("on").optional(),
 });
 
 const createCounterofferSchema = z.object({
@@ -1491,6 +1496,7 @@ async function updateTradeRequestStatus(formData: FormData): Promise<ActionState
     tradeRequestId: formData.get("tradeRequestId"),
     status: formData.get("status"),
     rejectionReason: optionalFormString(formData.get("rejectionReason")),
+    acknowledgeCancellation: optionalFormString(formData.get("acknowledgeCancellation")),
   });
 
   if (!parsed.success) {
@@ -1527,27 +1533,73 @@ async function updateTradeRequestStatus(formData: FormData): Promise<ActionState
   const requesterId = String(tradeRequest.requester_id);
   const receiverId = String(tradeRequest.receiver_id);
   const currentStatus = String(tradeRequest.status);
+  const isRequester = requesterId === userId;
+  const isReceiver = receiverId === userId;
 
-  if (["accepted", "rejected"].includes(parsed.data.status) && receiverId !== userId) {
+  if (["accepted", "rejected"].includes(parsed.data.status) && !isReceiver) {
     return {
       ok: false,
       message: "Solo quien recibió la solicitud puede aceptarla o rechazarla.",
     };
   }
 
-  if (parsed.data.status === "cancelled" && requesterId !== userId) {
-    return {
-      ok: false,
-      message: "Solo quien envió la solicitud puede cancelarla.",
-    };
-  }
-
-  if (["accepted", "rejected", "cancelled"].includes(parsed.data.status)
+  if (["accepted", "rejected"].includes(parsed.data.status)
     && !["pending", "countered"].includes(currentStatus)) {
     return {
       ok: false,
       message: "Esta solicitud ya no está pendiente.",
     };
+  }
+
+  if (parsed.data.status === "cancelled") {
+    if (!["pending", "countered", "accepted"].includes(currentStatus)) {
+      return {
+        ok: false,
+        message: "Esta solicitud o negociación ya terminó.",
+      };
+    }
+
+    let hasCompletionConfirmation = false;
+
+    if (currentStatus === "accepted") {
+      const { count, error: confirmationError } = await supabase
+        .from("trade_completion_confirmations")
+        .select("id", { count: "exact", head: true })
+        .eq("trade_request_id", parsed.data.tradeRequestId);
+
+      if (confirmationError) {
+        return {
+          ok: false,
+          message: "No se pudo comprobar el estado de la negociación.",
+        };
+      }
+
+      hasCompletionConfirmation = (count ?? 0) > 0;
+    }
+
+    if (!canCancelTradeRequest({
+      status: currentStatus as TradeRequestStatus,
+      isRequester,
+      isReceiver,
+      hasCompletionConfirmation,
+    })) {
+      return {
+        ok: false,
+        message: hasCompletionConfirmation
+          ? "La negociación ya tiene una confirmación de intercambio y no se puede cancelar."
+          : "No puedes cancelar esta solicitud o negociación.",
+      };
+    }
+
+    if (
+      currentStatus === "accepted"
+      && parsed.data.acknowledgeCancellation !== "on"
+    ) {
+      return {
+        ok: false,
+        message: "Confirma que el intercambio no se realizó antes de terminar la negociación.",
+      };
+    }
   }
 
   if (parsed.data.status === "accepted") {
@@ -1636,7 +1688,9 @@ async function updateTradeRequestStatus(formData: FormData): Promise<ActionState
 
   return {
     ok: true,
-    message: getTradeRequestStatusMessage(parsed.data.status),
+    message: parsed.data.status === "cancelled" && currentStatus === "accepted"
+      ? "Negociación terminada. El trueque no cuenta como realizado y los artículos vuelven a estar disponibles."
+      : getTradeRequestStatusMessage(parsed.data.status),
   };
 }
 

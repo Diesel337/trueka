@@ -18,6 +18,7 @@ describe("security migrations", () => {
   const hardening = readMigration("0024_security_hardening.sql");
   const privacy = readMigration("0025_profile_privacy.sql");
   const profileWrites = readMigration("0026_profile_write_rpcs.sql");
+  const negotiationExit = readMigration("0027_accepted_negotiation_exit.sql");
 
   it("protects profile, item and trade request updates", () => {
     expect(hardening).toContain("profile_self_update_is_safe");
@@ -84,5 +85,29 @@ describe("security migrations", () => {
     expect(actions).not.toMatch(
       /\.from\("profiles"\)\s*\.update\(\{\s*display_name:/s,
     );
+  });
+
+  it("reserves accepted trade items and safely releases cancelled negotiations", () => {
+    expect(negotiationExit).toContain(
+      "create or replace function public.manage_trade_request_item_reservations()",
+    );
+    expect(negotiationExit).toContain("new.status = 'accepted'");
+    expect(negotiationExit).toContain("set status = 'reserved'");
+    expect(negotiationExit).toContain("set status = 'active'");
+    expect(negotiationExit).toContain("trade_completion_confirmations");
+    expect(negotiationExit).toContain("other_request.status = 'accepted'");
+    expect(negotiationExit).toContain(
+      "after update of status on public.trade_requests",
+    );
+  });
+
+  it("requires an explicit no-exchange acknowledgement in the app", () => {
+    const actions = readSource("src/app/actions.ts");
+    const statusForm = readSource("src/components/trade-request-status-form.tsx");
+
+    expect(actions).toContain("acknowledgeCancellation: z.literal(\"on\").optional()");
+    expect(actions).toContain("canCancelTradeRequest");
+    expect(statusForm).toContain('name="acknowledgeCancellation"');
+    expect(statusForm).toContain("Terminar negociación");
   });
 });

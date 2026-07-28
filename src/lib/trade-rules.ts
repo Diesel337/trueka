@@ -117,6 +117,23 @@ export function canCompleteTradeRequest(items: Pick<Item, "status" | "moderation
   );
 }
 
+export function canCancelTradeRequest(input: {
+  status: TradeRequestStatus;
+  isRequester: boolean;
+  isReceiver: boolean;
+  hasCompletionConfirmation: boolean;
+}) {
+  if (input.status === "pending" || input.status === "countered") {
+    return input.isRequester;
+  }
+
+  if (input.status === "accepted") {
+    return (input.isRequester || input.isReceiver) && !input.hasCompletionConfirmation;
+  }
+
+  return false;
+}
+
 export function canUseTradeRequestChat(status: TradeRequestStatus) {
   return status === "accepted" || status === "completed";
 }

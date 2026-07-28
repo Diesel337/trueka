@@ -4,6 +4,7 @@ import { items, profiles } from "./mock-data";
 import {
   areSameCity,
   buildTradeRequestNotice,
+  canCancelTradeRequest,
   canCompleteTradeRequest,
   canUseTradeRequestChat,
   getCrossCityWarning,
@@ -91,6 +92,48 @@ describe("trade request rules", () => {
   it("only completes trades when all involved items are still available", () => {
     expect(canCompleteTradeRequest([requestedItem, offeredItem])).toBe(true);
     expect(canCompleteTradeRequest([{ ...requestedItem, status: "traded" }, offeredItem])).toBe(false);
+  });
+
+  it("lets either participant end an unconfirmed accepted negotiation", () => {
+    expect(canCancelTradeRequest({
+      status: "accepted",
+      isRequester: true,
+      isReceiver: false,
+      hasCompletionConfirmation: false,
+    })).toBe(true);
+    expect(canCancelTradeRequest({
+      status: "accepted",
+      isRequester: false,
+      isReceiver: true,
+      hasCompletionConfirmation: false,
+    })).toBe(true);
+    expect(canCancelTradeRequest({
+      status: "accepted",
+      isRequester: true,
+      isReceiver: false,
+      hasCompletionConfirmation: true,
+    })).toBe(false);
+  });
+
+  it("keeps pending cancellation limited to the requester", () => {
+    expect(canCancelTradeRequest({
+      status: "pending",
+      isRequester: true,
+      isReceiver: false,
+      hasCompletionConfirmation: false,
+    })).toBe(true);
+    expect(canCancelTradeRequest({
+      status: "pending",
+      isRequester: false,
+      isReceiver: true,
+      hasCompletionConfirmation: false,
+    })).toBe(false);
+    expect(canCancelTradeRequest({
+      status: "completed",
+      isRequester: true,
+      isReceiver: false,
+      hasCompletionConfirmation: true,
+    })).toBe(false);
   });
 
   it("enables chat only after a request is accepted", () => {

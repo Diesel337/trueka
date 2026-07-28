@@ -13,6 +13,7 @@ import {
   AcceptTradeRequestForm,
   CancelTradeRequestForm,
   CompleteTradeRequestForm,
+  EndTradeNegotiationForm,
   RejectTradeRequestForm,
 } from "@/components/trade-request-status-form";
 import { UserAvatar } from "@/components/user-avatar";
@@ -25,7 +26,7 @@ import {
   getTradeRequestsForCurrentUser,
 } from "@/lib/data";
 import { getMexicoStateDisplayName } from "@/lib/mexico-locations";
-import { canUseTradeRequestChat } from "@/lib/trade-rules";
+import { canCancelTradeRequest, canUseTradeRequestChat } from "@/lib/trade-rules";
 import type { TradeRequest, TradeRequestStatus } from "@/lib/types";
 
 type RequestDetailPageProps = {
@@ -60,6 +61,12 @@ export default async function RequestDetailPage({ params }: RequestDetailPagePro
   const canCreateCounteroffer = canRespond;
   const canRespondCounteroffer = isRequester && request.status === "countered" && Boolean(pendingCounteroffer);
   const canCancel = isRequester && ["pending", "countered"].includes(request.status);
+  const canEndNegotiation = canCancelTradeRequest({
+    status: request.status,
+    isRequester,
+    isReceiver,
+    hasCompletionConfirmation: request.completionConfirmations.length > 0,
+  }) && request.status === "accepted";
   const canChat = canUseTradeRequestChat(request.status);
   const otherUser = isRequester ? request.receiver : request.requester;
   const requesterItems = canCreateCounteroffer
@@ -90,6 +97,9 @@ export default async function RequestDetailPage({ params }: RequestDetailPagePro
               </>
             ) : null}
             {canCancel ? <CancelTradeRequestForm tradeRequestId={request.id} /> : null}
+            {canEndNegotiation ? (
+              <EndTradeNegotiationForm tradeRequestId={request.id} />
+            ) : null}
             {request.status === "accepted" ? (
               <>
                 <CompletionProgressPanel request={request} currentUserId={currentUser.id} />
@@ -121,7 +131,11 @@ export default async function RequestDetailPage({ params }: RequestDetailPagePro
               ) : (
                 <Clock3 aria-hidden="true" size={18} />
               )}
-              {canChat ? "Chat de negociación" : "Solicitud en espera"}
+              {canChat
+                ? "Chat de negociación"
+                : ["pending", "countered"].includes(request.status)
+                  ? "Solicitud en espera"
+                  : "Conversación cerrada"}
             </div>
             <h1 className="mt-2 text-2xl font-semibold text-stone-950">
               {request.requestedItem.title}
@@ -142,13 +156,7 @@ export default async function RequestDetailPage({ params }: RequestDetailPagePro
           ) : (
             <div className="p-5">
               <div className="rounded-md border border-stone-200 bg-stone-50 p-4 text-sm leading-6 text-stone-700">
-                El chat se habilita cuando la solicitud está aceptada y queda en negociación.
-                {canRespond
-                  ? " Si te interesa la oferta, acepta para abrir el chat; si no, recházala con un motivo claro."
-                  : null}
-                {canCancel
-                  ? " Tu solicitud ya fue enviada; puedes cancelarla mientras la otra persona no responda."
-                  : null}
+                {getUnavailableChatDescription(request.status, canRespond, canCancel)}
               </div>
             </div>
           )}
@@ -217,6 +225,17 @@ export default async function RequestDetailPage({ params }: RequestDetailPagePro
                 <li>Acuerden un lugar público.</li>
                 <li>Confirmen solo si el intercambio sí se hizo.</li>
               </ul>
+            </section>
+          ) : null}
+
+          {canEndNegotiation ? (
+            <section className="hidden gap-3 rounded-lg border border-stone-200 bg-white p-5 lg:grid">
+              <h2 className="text-lg font-semibold text-stone-950">¿El intercambio no ocurrió?</h2>
+              <p className="text-sm leading-6 text-stone-600">
+                Cualquiera de las dos personas puede terminar la negociación mientras nadie haya
+                confirmado que el intercambio sí se hizo.
+              </p>
+              <EndTradeNegotiationForm tradeRequestId={request.id} />
             </section>
           ) : null}
 
@@ -465,11 +484,35 @@ function getRequestStatusDescription(status: TradeRequestStatus) {
     accepted: "Ya pueden negociar en el chat. Aún no cuenta como trueque completado.",
     rejected: "La solicitud terminó rechazada y ya no abre negociación.",
     countered: "Hay una contraoferta pendiente de respuesta.",
-    cancelled: "La persona que envió la solicitud la canceló.",
+    cancelled: "La solicitud o negociación terminó sin marcar el trueque como realizado.",
     expired: "La solicitud expiró porque alguno de los artículos ya no está disponible.",
     completed: "Ambas personas confirmaron que el intercambio sí se hizo.",
     reported: "La solicitud fue reportada para revisión.",
   };
 
   return descriptions[status];
+}
+
+function getUnavailableChatDescription(
+  status: TradeRequestStatus,
+  canRespond: boolean,
+  canCancel: boolean,
+) {
+  if (status === "cancelled") {
+    return "La solicitud o negociación terminó. Ya no se pueden enviar mensajes.";
+  }
+
+  if (status === "rejected" || status === "expired" || status === "reported") {
+    return "Esta solicitud ya terminó y el chat no está disponible.";
+  }
+
+  return [
+    "El chat se habilita cuando la solicitud está aceptada y queda en negociación.",
+    canRespond
+      ? "Si te interesa la oferta, acepta para abrir el chat; si no, recházala con un motivo claro."
+      : "",
+    canCancel
+      ? "Tu solicitud ya fue enviada; puedes cancelarla mientras la otra persona no responda."
+      : "",
+  ].filter(Boolean).join(" ");
 }

@@ -30,8 +30,10 @@ Base revisada: `d9f4913`
 | OPS-02 | Media | Vigilar disponibilidad real de Supabase | Corregido |
 | QA-01 | Alta | Agregar pruebas de autorizacion, auth y regresion | Verificado |
 | EXT-01 | Critica | Ejecutar migraciones 0024 y 0025 en Supabase | Verificado |
-| REG-01 | Alta | Restaurar guardado de perfil tras ocultar columnas privadas | Corregido |
-| EXT-02 | Media | Confirmar alertas de GitHub Actions y proteccion de main | Pendiente externo |
+| REG-01 | Alta | Restaurar guardado de perfil tras ocultar columnas privadas | Verificado |
+| REG-02 | Alta | Permitir cerrar una negociacion aceptada no realizada | Corregido |
+| OPS-03 | Media | Verificar GitHub Actions y monitor de produccion | Verificado |
+| EXT-02 | Baja | Proteger main cuando el flujo adopte ramas y PR | Pendiente externo |
 | DEP-02 | Baja | Avisos de auditoria en herramientas de desarrollo de ESLint | Pendiente externo |
 | QA-02 | Alta | Probar escritura autenticada despues del endurecimiento RLS | En curso |
 | UX-01 | Media | Auditoria visual actual en escritorio y movil | Pendiente externo |
@@ -121,8 +123,47 @@ Base revisada: `d9f4913`
   campos de confianza como parametros.
 - La aplicacion ya usa esas funciones y conserva la limpieza de una foto subida
   si el guardado falla.
-- Falta ejecutar `0026`, desplegar el cambio y repetir la prueba manual de
-  guardado antes de cerrar `REG-01` y `QA-02` como verificados.
+- El usuario ejecuto `0026`; Railway desplego el commit `a79c2c9` y reporto
+  estado exitoso. Portada, `/api/health` y `/api/ready` respondieron `200`.
+- La prueba manual autenticada guardo el perfil y mostro
+  `Perfil actualizado.`. `REG-01` queda verificado; `QA-02` continua hasta
+  comprobar publicacion, solicitud y chat.
+- La prueba manual autenticada tambien edito una publicacion activa y guardo
+  los cambios correctamente. El flujo de publicaciones queda comprobado.
+- La segunda cuenta publico otro articulo activo; Explorar mostro las dos
+  publicaciones y permitio enviar una propuesta entre cuentas ofreciendo el
+  articulo propio.
+- La primera cuenta acepto la solicitud y el chat funciono en ambas sesiones.
+  La prueba revelo que una negociacion aceptada no tenia una salida si el
+  intercambio no ocurria, por lo que los articulos podian quedar apartados.
+
+### 2026-07-27 - Salida de negociaciones no realizadas
+
+- La migracion `0027_accepted_negotiation_exit.sql` reserva atomicamente los
+  articulos cuando una solicitud queda aceptada.
+- Cualquiera de las dos personas puede terminar una negociacion aceptada
+  mientras nadie haya confirmado que el intercambio si ocurrio.
+- Al terminarla, la solicitud queda cancelada, el chat deja de aceptar mensajes
+  y los articulos reservados vuelven a estar activos si ninguna otra
+  negociacion aceptada aun los usa.
+- La interfaz exige confirmar expresamente que el intercambio no se realizo y
+  explica que el trueque no contara como completado.
+- Validacion local aprobada: lint, 60 pruebas, build de produccion y respuestas
+  `200` en portada y `/api/health` desde el paquete standalone.
+- Falta ejecutar la migracion, desplegar y terminar la negociacion de prueba
+  desde una de las dos cuentas para verificar `REG-02`.
+
+### 2026-07-27 - Verificacion operativa de GitHub
+
+- `Quality checks` se ejecuto por el push de `a79c2c9` y termino exitosamente:
+  lint, pruebas, build y auditoria de dependencias de produccion.
+- `Production uptime` registra 44 ejecuciones programadas; las diez mas
+  recientes consultadas terminaron correctamente.
+- Railway reporto exitoso el mismo commit y expone su identificador en los
+  endpoints de salud.
+- `main` acepta pushes directos. La proteccion con checks obligatorios se
+  reserva para cuando el proyecto adopte ramas y pull requests, evitando
+  complicar por ahora el flujo de una sola persona.
 
 ## Criterios de cierre
 
