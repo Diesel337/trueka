@@ -9,17 +9,18 @@ import {
 } from "@/components/trade-request-status-form";
 import { getMexicoStateDisplayName } from "@/lib/mexico-locations";
 import { buildTradeRequestNotice, canUseTradeRequestChat, getCrossCityWarning } from "@/lib/trade-rules";
+import {
+  getTradeRequestStatusMeta,
+  type TradeRequestStatusTone,
+} from "@/lib/trade-request-status";
 import type { TradeRequest } from "@/lib/types";
 
-const statusLabels: Record<TradeRequest["status"], string> = {
-  pending: "Pendiente",
-  accepted: "Aceptada / en negociación",
-  rejected: "Rechazada",
-  countered: "Contraoferta",
-  cancelled: "Cancelada",
-  expired: "Expirada",
-  completed: "Completada",
-  reported: "Reportada",
+const requestStatusBadgeClasses: Record<TradeRequestStatusTone, string> = {
+  active: "border-sky-200 bg-sky-50 text-sky-800",
+  danger: "border-red-200 bg-red-50 text-red-800",
+  neutral: "border-stone-200 bg-stone-100 text-stone-700",
+  success: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  warning: "border-amber-200 bg-amber-50 text-amber-900",
 };
 
 export function TradeRequestCard({
@@ -37,6 +38,7 @@ export function TradeRequestCard({
   const canRequesterCancel = isSent && ["pending", "countered"].includes(request.status);
   const canOpenChat = canUseTradeRequestChat(request.status);
   const visibleStatus = getVisibleStatus(request, direction);
+  const statusTone = getTradeRequestStatusMeta(request.status).tone;
   const unreadMessageCount = request.unreadMessageCount ?? 0;
   const needsRating = request.status === "completed" && !request.currentUserRating;
   const primaryActions = (
@@ -98,7 +100,9 @@ export function TradeRequestCard({
             Oferta: {request.offeredItems.map((item) => item.title).join(" + ")}
           </p>
         </div>
-        <span className="w-fit rounded-md bg-stone-100 px-2 py-1 text-xs font-semibold text-stone-700">
+        <span
+          className={`w-fit rounded-md border px-2 py-1 text-xs font-semibold ${requestStatusBadgeClasses[statusTone]}`}
+        >
           {visibleStatus}
         </span>
       </div>
@@ -260,5 +264,5 @@ function getVisibleStatus(request: TradeRequest, direction: "received" | "sent")
     return request.currentUserRating ? "Completada / calificada" : "Completada / falta calificar";
   }
 
-  return statusLabels[request.status];
+  return getTradeRequestStatusMeta(request.status).label;
 }

@@ -1,7 +1,17 @@
-import { CheckCircle2, Clock3, MapPin, MessageCircle, Repeat2, ShieldCheck } from "lucide-react";
+import {
+  CheckCircle2,
+  CircleX,
+  Clock3,
+  MapPin,
+  MessageCircle,
+  Repeat2,
+  ShieldAlert,
+  ShieldCheck,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ReactNode } from "react";
 
 import { CounterofferForm, CounterofferSummary } from "@/components/counteroffer-panel";
 import { LiveRefresh } from "@/components/live-refresh";
@@ -27,6 +37,10 @@ import {
 } from "@/lib/data";
 import { getMexicoStateDisplayName } from "@/lib/mexico-locations";
 import { canCancelTradeRequest, canUseTradeRequestChat } from "@/lib/trade-rules";
+import {
+  getTradeRequestStatusMeta,
+  type TradeRequestStatusTone,
+} from "@/lib/trade-request-status";
 import type { TradeRequest, TradeRequestStatus } from "@/lib/types";
 
 type RequestDetailPageProps = {
@@ -81,46 +95,41 @@ export default async function RequestDetailPage({ params }: RequestDetailPagePro
       <LiveRefresh intervalMs={7000} />
       <MarkRequestRead requestId={request.id} />
       <section className="mx-auto grid max-w-6xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_340px] lg:px-8">
-        <section className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm lg:hidden">
-          <p className="text-sm font-semibold text-emerald-800">Estado actual</p>
-          <h2 className="mt-1 text-lg font-semibold text-stone-950">
-            {getRequestStatusLabel(request.status)}
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-stone-600">
-            {getRequestStatusDescription(request.status)}
-          </p>
-          <div className="mt-4 grid gap-2">
-            {canRespond ? (
-              <>
-                <AcceptTradeRequestForm tradeRequestId={request.id} />
-                <RejectTradeRequestForm tradeRequestId={request.id} />
-              </>
-            ) : null}
-            {canCancel ? <CancelTradeRequestForm tradeRequestId={request.id} /> : null}
-            {canEndNegotiation ? (
-              <EndTradeNegotiationForm tradeRequestId={request.id} />
-            ) : null}
-            {request.status === "accepted" ? (
-              <>
-                <CompletionProgressPanel request={request} currentUserId={currentUser.id} />
-                <CompleteTradeRequestForm
-                  tradeRequestId={request.id}
-                  currentUserConfirmed={currentUserConfirmed}
-                  otherUserConfirmed={otherUserConfirmed}
-                />
-              </>
-            ) : null}
-            {canChat ? (
-              <a
-                href="#chat"
-                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-700 hover:bg-stone-50"
-              >
-                <MessageCircle aria-hidden="true" size={16} />
-                Ir al chat
-              </a>
-            ) : null}
-          </div>
-        </section>
+        <RequestStatusPanel
+          status={request.status}
+          rejectionReason={request.rejectionReason}
+          className="lg:hidden"
+        >
+          {canRespond ? (
+            <>
+              <AcceptTradeRequestForm tradeRequestId={request.id} />
+              <RejectTradeRequestForm tradeRequestId={request.id} />
+            </>
+          ) : null}
+          {canCancel ? <CancelTradeRequestForm tradeRequestId={request.id} /> : null}
+          {canEndNegotiation ? (
+            <EndTradeNegotiationForm tradeRequestId={request.id} />
+          ) : null}
+          {request.status === "accepted" ? (
+            <>
+              <CompletionProgressPanel request={request} currentUserId={currentUser.id} />
+              <CompleteTradeRequestForm
+                tradeRequestId={request.id}
+                currentUserConfirmed={currentUserConfirmed}
+                otherUserConfirmed={otherUserConfirmed}
+              />
+            </>
+          ) : null}
+          {canChat ? (
+            <a
+              href="#chat"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-stone-300 px-3 text-sm font-semibold text-stone-700 hover:bg-stone-50"
+            >
+              <MessageCircle aria-hidden="true" size={16} />
+              Ir al chat
+            </a>
+          ) : null}
+        </RequestStatusPanel>
 
         <div className="space-y-4">
           <div id="chat" className="scroll-mt-24 rounded-lg border border-stone-200 bg-white shadow-sm">
@@ -165,20 +174,11 @@ export default async function RequestDetailPage({ params }: RequestDetailPagePro
         </div>
 
         <aside className="space-y-4">
-          <section className="rounded-lg border border-stone-200 bg-white p-5">
-            <p className="text-sm font-semibold text-emerald-800">Estado actual</p>
-            <h2 className="mt-1 text-lg font-semibold text-stone-950">
-              {getRequestStatusLabel(request.status)}
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-stone-600">
-              {getRequestStatusDescription(request.status)}
-            </p>
-            {request.rejectionReason ? (
-              <p className="mt-3 rounded-md bg-stone-50 p-3 text-sm text-stone-600">
-                Motivo: {request.rejectionReason}
-              </p>
-            ) : null}
-          </section>
+          <RequestStatusPanel
+            status={request.status}
+            rejectionReason={request.rejectionReason}
+            className="hidden lg:block"
+          />
 
           {canRespond ? (
             <section className="grid gap-3 rounded-lg border border-stone-200 bg-white p-5">
@@ -463,34 +463,121 @@ function CompletionProgressPanel({
   );
 }
 
-function getRequestStatusLabel(status: TradeRequestStatus) {
-  const labels: Record<TradeRequestStatus, string> = {
-    pending: "Pendiente de respuesta",
-    accepted: "Aceptada / en negociación",
-    rejected: "Rechazada",
-    countered: "Contraoferta",
-    cancelled: "Cancelada",
-    expired: "Expirada",
-    completed: "Completada",
-    reported: "Reportada",
-  };
+const requestStatusPanelClasses: Record<TradeRequestStatusTone, {
+  panel: string;
+  icon: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  reason: string;
+}> = {
+  active: {
+    panel: "border-sky-300 bg-sky-50",
+    icon: "bg-sky-100 text-sky-700",
+    eyebrow: "text-sky-800",
+    title: "text-sky-950",
+    description: "text-sky-900",
+    reason: "border-sky-200 bg-white/70 text-sky-900",
+  },
+  danger: {
+    panel: "border-red-300 bg-red-50",
+    icon: "bg-red-100 text-red-700",
+    eyebrow: "text-red-800",
+    title: "text-red-950",
+    description: "text-red-900",
+    reason: "border-red-200 bg-white/70 text-red-900",
+  },
+  neutral: {
+    panel: "border-stone-300 bg-stone-100",
+    icon: "bg-white text-stone-600",
+    eyebrow: "text-stone-700",
+    title: "text-stone-950",
+    description: "text-stone-700",
+    reason: "border-stone-300 bg-white/70 text-stone-700",
+  },
+  success: {
+    panel: "border-emerald-300 bg-emerald-50",
+    icon: "bg-emerald-100 text-emerald-700",
+    eyebrow: "text-emerald-800",
+    title: "text-emerald-950",
+    description: "text-emerald-900",
+    reason: "border-emerald-200 bg-white/70 text-emerald-900",
+  },
+  warning: {
+    panel: "border-amber-300 bg-amber-50",
+    icon: "bg-amber-100 text-amber-700",
+    eyebrow: "text-amber-800",
+    title: "text-amber-950",
+    description: "text-amber-900",
+    reason: "border-amber-200 bg-white/70 text-amber-900",
+  },
+};
 
-  return labels[status];
+function RequestStatusPanel({
+  status,
+  rejectionReason,
+  className = "",
+  children,
+}: {
+  status: TradeRequestStatus;
+  rejectionReason?: string;
+  className?: string;
+  children?: ReactNode;
+}) {
+  const meta = getTradeRequestStatusMeta(status);
+  const classes = requestStatusPanelClasses[meta.tone];
+
+  return (
+    <section
+      role="status"
+      className={`${className} rounded-lg border-2 p-5 shadow-sm ${classes.panel}`}
+    >
+      <div className="flex items-start gap-3">
+        <span className={`grid size-10 shrink-0 place-items-center rounded-md ${classes.icon}`}>
+          <RequestStatusIcon status={status} />
+        </span>
+        <div className="min-w-0">
+          <p className={`text-sm font-semibold ${classes.eyebrow}`}>Estado actual</p>
+          <h2 className={`mt-0.5 text-xl font-bold ${classes.title}`}>{meta.label}</h2>
+        </div>
+      </div>
+      <p className={`mt-4 text-sm leading-6 ${classes.description}`}>
+        {meta.description}
+      </p>
+      {rejectionReason ? (
+        <p className={`mt-3 rounded-md border p-3 text-sm ${classes.reason}`}>
+          Motivo: {rejectionReason}
+        </p>
+      ) : null}
+      {children ? (
+        <div className="mt-4 grid gap-2 border-t border-black/10 pt-4">{children}</div>
+      ) : null}
+    </section>
+  );
 }
 
-function getRequestStatusDescription(status: TradeRequestStatus) {
-  const descriptions: Record<TradeRequestStatus, string> = {
-    pending: "La otra persona todavía no responde. El chat se abre cuando la solicitud se acepta.",
-    accepted: "Ya pueden negociar en el chat. Aún no cuenta como trueque completado.",
-    rejected: "La solicitud terminó rechazada y ya no abre negociación.",
-    countered: "Hay una contraoferta pendiente de respuesta.",
-    cancelled: "La solicitud o negociación terminó sin marcar el trueque como realizado.",
-    expired: "La solicitud expiró porque alguno de los artículos ya no está disponible.",
-    completed: "Ambas personas confirmaron que el intercambio sí se hizo.",
-    reported: "La solicitud fue reportada para revisión.",
-  };
+function RequestStatusIcon({ status }: { status: TradeRequestStatus }) {
+  if (status === "cancelled" || status === "rejected") {
+    return <CircleX aria-hidden="true" size={21} />;
+  }
 
-  return descriptions[status];
+  if (status === "completed") {
+    return <CheckCircle2 aria-hidden="true" size={21} />;
+  }
+
+  if (status === "accepted") {
+    return <MessageCircle aria-hidden="true" size={21} />;
+  }
+
+  if (status === "countered") {
+    return <Repeat2 aria-hidden="true" size={21} />;
+  }
+
+  if (status === "reported") {
+    return <ShieldAlert aria-hidden="true" size={21} />;
+  }
+
+  return <Clock3 aria-hidden="true" size={21} />;
 }
 
 function getUnavailableChatDescription(

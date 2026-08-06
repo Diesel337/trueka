@@ -38,6 +38,7 @@ Base revisada: `d9f4913`
 | DEP-02 | Baja | Avisos de auditoria en herramientas de desarrollo de ESLint | Pendiente externo |
 | QA-02 | Alta | Probar escritura autenticada despues del endurecimiento RLS | Verificado |
 | UX-01 | Media | Auditoria visual actual en escritorio y movil | Pendiente externo |
+| UX-02 | Media | Hacer visible el estado actual de cada solicitud | Corregido |
 
 ## Registro
 
@@ -191,6 +192,19 @@ Base revisada: `d9f4913`
 - `main` acepta pushes directos. La proteccion con checks obligatorios se
   reserva para cuando el proyecto adopte ramas y pull requests, evitando
   complicar por ahora el flujo de una sola persona.
+
+### 2026-08-05 - Jerarquia visual de estados
+
+- El panel `Estado actual` usa ahora borde, fondo, icono y tipografia acordes
+  al resultado de la solicitud en movil y escritorio.
+- Canceladas, rechazadas y reportadas se muestran en rojo; pendientes y
+  contraofertas en ambar; negociaciones aceptadas en azul; completadas en verde
+  y expiradas en gris.
+- La lista de Solicitudes usa los mismos tonos para evitar que el detalle y el
+  resumen comuniquen estados diferentes.
+- Se agrego una prueba de regresion para mantener la clasificacion visual de
+  estados terminales y activos.
+- Validacion local aprobada: lint, 63 pruebas y build de produccion.
 
 ## Criterios de cierre
 
