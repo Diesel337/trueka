@@ -31,12 +31,12 @@ Base revisada: `d9f4913`
 | QA-01 | Alta | Agregar pruebas de autorizacion, auth y regresion | Verificado |
 | EXT-01 | Critica | Ejecutar migraciones 0024 y 0025 en Supabase | Verificado |
 | REG-01 | Alta | Restaurar guardado de perfil tras ocultar columnas privadas | Verificado |
-| REG-02 | Alta | Permitir cerrar una negociacion aceptada no realizada | Corregido |
-| REG-03 | Alta | Mantener visible una negociacion al reservar sus articulos | Corregido |
+| REG-02 | Alta | Permitir cerrar una negociacion aceptada no realizada | Verificado |
+| REG-03 | Alta | Mantener visible una negociacion al reservar sus articulos | Verificado |
 | OPS-03 | Media | Verificar GitHub Actions y monitor de produccion | Verificado |
 | EXT-02 | Baja | Proteger main cuando el flujo adopte ramas y PR | Pendiente externo |
 | DEP-02 | Baja | Avisos de auditoria en herramientas de desarrollo de ESLint | Pendiente externo |
-| QA-02 | Alta | Probar escritura autenticada despues del endurecimiento RLS | En curso |
+| QA-02 | Alta | Probar escritura autenticada despues del endurecimiento RLS | Verificado |
 | UX-01 | Media | Auditoria visual actual en escritorio y movil | Pendiente externo |
 
 ## Registro
@@ -170,6 +170,15 @@ Base revisada: `d9f4913`
   terminar cada operacion.
 - Validacion local de la correccion: lint aprobado, 61 pruebas aprobadas y
   build de produccion aprobado.
+- El usuario confirmo desde la interfaz que la solicitud aparece como
+  `Cancelada`, la conversacion queda cerrada y el trueque no se marca como
+  realizado.
+- La comprobacion externa posterior encontro las dos publicaciones nuevamente
+  en Explorar. Portada, `/api/health` y `/api/ready` respondieron `200`; Railway
+  sirve el commit `b91a0d9` y Supabase reporta la base disponible.
+- Las pruebas autenticadas de perfil, publicacion, solicitud, aceptacion, chat,
+  visibilidad de la negociacion y cancelacion quedan completas. `REG-02`,
+  `REG-03` y `QA-02` pasan a verificados.
 
 ### 2026-07-27 - Verificacion operativa de GitHub
 
